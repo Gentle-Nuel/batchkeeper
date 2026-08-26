@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+@theme {
+  /* Design tokens — see Production-Log-App-Handoff.md §4. Placeholder wireframe
+     palette, not an approved brand identity; swap freely once branding lands. */
+  --color-teal: #0f766e;
+  --color-teal-dark: #0b5c56;
+
+  --color-text: #171717;
+  --color-text-secondary: #777772;
+  --color-border: #e2e2df;
+  --color-surface: #ffffff;
+  --color-bg: #f7f7f5;
+  --color-input-fill: #f8f8f6;
+  --color-danger: #b3261e;
+
+  --color-status-ready-bg: #e8eee7;
+  --color-status-ready-text: #4d624d;
+  --color-status-curing-bg: #f0ece3;
+  --color-status-curing-text: #665e4b;
+  --color-status-soldout-bg: #ecece9;
+  --color-status-soldout-text: #666662;
+
+  --radius-card: 14px;
+  --radius-input: 10px;
+  --radius-pill: 16px;
+  --radius-frame: 18px;
+
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Hide scrollbars on the mobile-frame scroll containers without disabling scroll. */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
