@@ -1,40 +1,48 @@
 # Batchkeeper
 
-A mobile-first production and inventory log for small cosmetics, soap, and cleaning-agent makers. It replaces informal tracking (notebooks, spreadsheets, memory) with a structured tool for logging batches, tracking raw material stock, recording sales, and seeing real profit and loss.
+A mobile-first production and inventory management application for small businesses that manufacture physical products. It replaces informal tracking (notebooks, spreadsheets, memory) with a structured tool for logging production batches, tracking raw material stock, recording sales, and understanding product costs and profitability.
 
-Built for a single business owner working mid-production, usually on her phone, often with unreliable internet. The app is offline-first: entries are held locally and synced when a connection is available.
+Built for a business owner working during production, often from a phone and sometimes with unreliable internet. The app is designed around an offline-first workflow: entries can be held locally and synchronized when a connection is available.
 
 ## Status
 
-Actively in development. The Penpot wireframe (23 screens, documented in [Production-Log-App-Handoff.md](Production-Log-App-Handoff.md)) is done and the real app is being built against it in [app/](app). See [DEVLOG.md](DEVLOG.md) for a day-by-day build log and [Wireframe-vs-Build-Comparison.md](Wireframe-vs-Build-Comparison.md) for where the build has diverged from the original wireframe and why.
+**Deployed web application — actively being refined.**
+
+The application is deployed and functional, with ongoing development focused on refining existing workflows and expanding the product. The original Penpot wireframe (23 screens, documented in `Production-Log-App-Handoff.md`) provided the foundation for the current application, while `DEVLOG.md` documents the development process and `Wireframe-vs-Build-Comparison.md` records known differences between the original design and the current implementation.
 
 ## Core workflow
 
-- **Log a batch**: pick a product, confirm materials actually used against the recipe, record yield and loss, and get a cost breakdown.
-- **Track stock**: raw materials with cost per unit, current stock, and reorder points, shared across every recipe that uses them.
-- **Log a sale**: sell from a specific batch, retail or distributor pricing, with running stock and totals.
-- **Reports**: profit and loss by date range or product, with a trend view.
+* **Log a batch:** Select a product, confirm materials actually used against its recipe, record yield and loss, and get a production cost breakdown.
+* **Track stock:** Manage raw materials with cost per unit, current stock levels, and reorder points across the products that use them.
+* **Log a sale:** Record sales against specific production batches using retail or distributor pricing, while keeping stock and sales totals up to date.
+* **Reports:** Review profit and loss across date ranges or products, with trend information for understanding performance.
 
-Materials are shared across product lines, so a shortage in one material is reported against every product it affects, not just flagged in isolation. NAFDAC registration fields exist on each product but are optional and out of the daily flow, since the business isn't registered yet.
+Materials are shared across product lines, so shortages can be traced across every product affected by a material rather than being treated as isolated inventory issues.
+
+Products also support optional NAFDAC registration information without making regulatory data part of the daily production workflow.
 
 ## Stack
 
-- React 19 + TypeScript, built with Vite
-- Tailwind CSS
-- Zustand for state
-- Supabase (Postgres, Auth, Edge Functions) as the backend
-- Deployed as a PWA on Vercel, with offline sync and Web Push notifications
+* React 19 + TypeScript, built with Vite
+* Tailwind CSS
+* Zustand for state management
+* Supabase (PostgreSQL, Auth, Edge Functions) as the backend
+* Progressive Web App deployed on Vercel
+* Offline synchronization and Web Push notifications
+* SQL migrations for database schema management
+* oxlint for code quality
 
 ## Repository layout
 
-```
-app/                          The real application (React + Supabase)
-  src/                        Screens, components, stores, lib
-  supabase/                   SQL migrations and edge functions
-Production-Log-App-Handoff.md Full wireframe-to-development spec (screens, design system, data model)
-DEVLOG.md                     Day-by-day build log
-Wireframe-vs-Build-Comparison.md   Known gaps between the wireframe and the current build
-production-log-wireframe-handoff.md   Earlier, shorter handoff draft
+```text
+app/                                  The production application (React + Supabase)
+  src/                                Screens, components, stores, and libraries
+  supabase/                           SQL migrations and Edge Functions
+
+Production-Log-App-Handoff.md        Wireframe-to-development specification
+DEVLOG.md                             Development log
+Wireframe-vs-Build-Comparison.md     Differences between the wireframe and current build
+production-log-wireframe-handoff.md  Earlier, shorter handoff draft
 ```
 
 ## Getting started
@@ -42,11 +50,16 @@ production-log-wireframe-handoff.md   Earlier, shorter handoff draft
 ```bash
 cd app
 npm install
-cp .env.example .env   # fill in your own Supabase project URL, anon key, and VAPID public key
+cp .env.example .env
+```
+
+Fill in the required Supabase project credentials and VAPID public key in `.env`, then start the development server:
+
+```bash
 npm run dev
 ```
 
-The app expects a Supabase project with the schema in `app/supabase/migrations` applied. It will not run against a shared or example backend since data is scoped per business.
+The application expects a Supabase project with the schema in `app/supabase/migrations` applied. Data is scoped per business, so the application is not intended to run against a shared or example backend.
 
 Other scripts, run from `app/`:
 
@@ -58,4 +71,8 @@ npm run preview   # preview a production build locally
 
 ## Design reference
 
-The original wireframe lives in Penpot (23 screens, no final brand identity applied yet). [Production-Log-App-Handoff.md](Production-Log-App-Handoff.md) is the full handoff document: navigation architecture, screen-by-screen inventory, the color and type system, key interaction patterns, and the data model the screens were built against.
+The original wireframe was created in Penpot and contains 23 screens. It established the application's navigation architecture, screen structure, interaction patterns, color and typography system, and underlying data model.
+
+`Production-Log-App-Handoff.md` contains the full design-to-development handoff and documents the decisions used to build the application.
+
+The current implementation has intentionally evolved beyond the original wireframe where product and implementation requirements called for it. `Wireframe-vs-Build-Comparison.md` documents those differences and the reasoning behind them.
