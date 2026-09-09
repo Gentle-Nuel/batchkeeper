@@ -10,6 +10,8 @@
 // production line) — Business.id is independent, ownerId links it back to
 // the signed-in auth user. See supabase/migrations/0002_multi_business.sql.
 
+export type PlanTier = "free" | "paid";
+
 export interface Business {
   id: string;
   ownerId: string;
@@ -19,6 +21,10 @@ export interface Business {
   currency: string; // e.g. "NGN"
   ownerEmail: string;
   createdAt: string; // ISO date
+  // Gates the free-tier caps enforced server-side in
+  // supabase/migrations/0004_freemium_caps.sql (monthly production-entry
+  // count, businesses-per-account) — see src/lib/planLimits.ts.
+  plan: PlanTier;
 }
 
 export type MaterialUnit = "g" | "ml" | "kg" | "l";

@@ -12,9 +12,10 @@ import type {
 } from "../types/models";
 import { supabase } from "../lib/supabaseClient";
 import { rowToCamel, toSnakeRow } from "../lib/supabaseMappers";
-import { enqueue, flushOutbox, outboxLength } from "../lib/outbox";
+import { enqueue, flushOutbox, outboxLength, discardQueuedOpsCausedBy, onPermanentRejection } from "../lib/outbox";
 import { useToastStore } from "./useToastStore";
 import { productsUsingMaterial } from "../lib/selectors";
+import type { PlanLimitsByPlan } from "../lib/planLimits";
 import type { AccountExport } from "../types/export";
 
 // Real Supabase-backed store. Every business-owned row's id is generated
@@ -53,6 +54,11 @@ interface AppState {
   businesses: Business[];
   business: Business;
   activeBusinessId: string | null;
+  /** Fetched once at boot from the `plan_limits` table — see
+   * lib/planLimits.ts. Empty until loaded; every consumer treats a missing
+   * entry as unlimited (fail open — this is a UX convenience, not the
+   * actual enforcement boundary). */
+  planLimits: PlanLimitsByPlan;
 
   materials: Material[];
   products: Product[];
@@ -76,7 +82,7 @@ interface AppState {
   changeEmail: (newEmail: string, currentPassword: string) => Promise<{ error?: string }>;
 
   // Businesses
-  addBusiness: (input: Omit<Business, "id" | "ownerId" | "ownerEmail" | "createdAt">) => string;
+  addBusiness: (input: Omit<Business, "id" | "ownerId" | "ownerEmail" | "createdAt" | "plan">) => string;
   switchBusiness: (id: string) => void;
   updateBusiness: (patch: Partial<Business>) => void;
 
@@ -113,7 +119,7 @@ interface AppState {
   exportAllData: () => Promise<{ data?: AccountExport; error?: string }>;
 }
 
-const emptyBusiness: Business = { id: "", ownerId: "", currency: "NGN", ownerEmail: "", createdAt: "" };
+const emptyBusiness: Business = { id: "", ownerId: "", currency: "NGN", ownerEmail: "", createdAt: "", plan: "free" };
 const emptyNotificationSettings: NotificationSettings = {
   businessId: "",
   lowStockAlerts: true,
@@ -169,9 +175,20 @@ function notifyNewlyLowStock(before: Material[], after: Material[], products: Pr
 }
 
 /** Queue a write for the given table/row, then attempt to flush the whole
- * outbox in the background. Call after every optimistic local mutation. */
-function queueAndFlush(op: { table: Parameters<typeof enqueue>[0]["table"]; kind: "upsert" | "delete"; row?: Record<string, unknown>; rowId?: string }) {
-  enqueue(op);
+ * outbox in the background. Call after every optimistic local mutation.
+ * Returns the queued op's id — pass it as a follow-up op's `causedByOpId`
+ * when that op is only a side effect of this one (e.g. a material
+ * stock-upsert queued right after the batch/restock that changed the
+ * stock), so a permanent rejection of this op can precisely discard just
+ * its own dependents later (see lib/outbox.ts's discardQueuedOpsCausedBy). */
+function queueAndFlush(op: {
+  table: Parameters<typeof enqueue>[0]["table"];
+  kind: "upsert" | "delete";
+  row?: Record<string, unknown>;
+  rowId?: string;
+  causedByOpId?: string;
+}): string {
+  const opId = enqueue(op);
   useAppStore.setState({ syncState: navigator.onLine ? "pending" : "offline", pendingSyncCount: outboxLength() });
   void flushOutbox().then(({ remaining }) => {
     useAppStore.setState((s) => ({
@@ -180,6 +197,7 @@ function queueAndFlush(op: { table: Parameters<typeof enqueue>[0]["table"]; kind
       lastSyncedAt: remaining > 0 ? s.lastSyncedAt : new Date().toISOString(),
     }));
   });
+  return opId;
 }
 
 const clearedBusinessData = {
@@ -302,6 +320,99 @@ async function loadBusinesses(ownerId: string): Promise<void> {
   }
 }
 
+/** Fetch the plan_limits reference table once — see lib/planLimits.ts for
+ * why the client reads these numbers instead of hardcoding a duplicate. */
+async function loadPlanLimits(): Promise<void> {
+  const { data } = await supabase.from("plan_limits").select("*");
+  if (!data) return;
+  const byPlan: PlanLimitsByPlan = {};
+  for (const row of data as Record<string, unknown>[]) {
+    byPlan[row.plan as string] = {
+      monthlyEntries: (row.monthly_entries as number | null) ?? null,
+      maxBusinesses: (row.max_businesses as number | null) ?? null,
+    };
+  }
+  useAppStore.setState({ planLimits: byPlan });
+}
+
+let rejectionHandlerRegistered = false;
+
+/** Reacts to a write the outbox has determined can never succeed (see
+ * lib/outbox.ts's onPermanentRejection) — purges the corresponding local
+ * entity rather than leaving it stuck retrying forever, which is the whole
+ * point of the free-plan "purged, not silently dropped" decision. Only
+ * batches/restock_entries (the entry cap) and businesses (the 1-business
+ * cap) can ever be rejected this way — see
+ * supabase/migrations/0004_freemium_caps.sql. */
+function registerRejectionHandler() {
+  if (rejectionHandlerRegistered) return;
+  rejectionHandlerRegistered = true;
+
+  onPermanentRejection((op) => {
+    const id = (op.row?.id as string | undefined) ?? op.rowId;
+    if (!id) return;
+
+    if (op.table === "batches" || op.table === "restock_entries") {
+      // The material stock-upsert op(s) queued right after this one were
+      // computed off a deduction/addition that never actually happened
+      // server-side — sending them now would corrupt real stock. They're
+      // still queued at this point (batches/restocks are always enqueued
+      // before their material follow-ups, and the outbox is strict FIFO),
+      // so drop them before they're ever attempted. Matched by opId (via
+      // causedByOpId), not by which material they touch — a *different*,
+      // still-legitimate op queued later for the same material (e.g. an
+      // unrelated restock) must not get swept up in this.
+      discardQueuedOpsCausedBy(op.opId);
+
+      useAppStore.setState((s) => ({
+        batches: op.table === "batches" ? s.batches.filter((b) => b.id !== id) : s.batches,
+        restocks: op.table === "restock_entries" ? s.restocks.filter((r) => r.id !== id) : s.restocks,
+      }));
+
+      // Resync material stock from the server rather than hand-reversing
+      // the optimistic deduction/addition locally — the server is the
+      // source of truth, and this avoids a second class of manual-delta
+      // bugs (the same category as the outbox snapshot bug fixed earlier
+      // in this project).
+      const businessId = useAppStore.getState().business.id;
+      if (businessId) void loadBusinessData(businessId);
+
+      useToastStore
+        .getState()
+        .showToast("Not saved — you've reached this month's free-plan limit. Upgrade to log more.", "warning");
+    } else if (op.table === "businesses") {
+      // addBusiness() always makes the new business the active one
+      // immediately, so the rejected business is very likely (though not
+      // guaranteed, if the user switched away in the meantime) the one
+      // currently active — fall back to a remaining business the same way
+      // switchBusiness() does, rather than leaving a dangling reference to
+      // a business that no longer exists locally.
+      const state = useAppStore.getState();
+      const remaining = state.businesses.filter((b) => b.id !== id);
+      const wasActive = state.business.id === id;
+      const fallback = wasActive ? (remaining[0] ?? null) : null;
+
+      useAppStore.setState({
+        businesses: remaining,
+        ...(wasActive
+          ? {
+              business: fallback ?? emptyBusiness,
+              activeBusinessId: fallback?.id ?? null,
+              needsBusinessSetup: remaining.length === 0,
+              ...clearedBusinessData,
+              dataLoaded: fallback === null,
+            }
+          : {}),
+      });
+      if (fallback) void loadBusinessData(fallback.id);
+
+      useToastStore
+        .getState()
+        .showToast("Not saved — free accounts are limited to 1 business. Upgrade to add more.", "warning");
+    }
+  });
+}
+
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
@@ -316,6 +427,7 @@ export const useAppStore = create<AppState>()(
       businesses: [],
       business: emptyBusiness,
       activeBusinessId: null,
+      planLimits: {},
 
       materials: [],
       products: [],
@@ -330,6 +442,7 @@ export const useAppStore = create<AppState>()(
 
       initAuth: () => {
         registerConnectivityListeners();
+        registerRejectionHandler();
 
         if (authListenerRegistered) return;
         authListenerRegistered = true;
@@ -366,6 +479,7 @@ export const useAppStore = create<AppState>()(
                 businessLoadInFlight = null;
               });
             }
+            void loadPlanLimits();
           } else {
             set({
               businesses: [],
@@ -453,7 +567,14 @@ export const useAppStore = create<AppState>()(
         const id = crypto.randomUUID();
         const ownerId = get().authUserId ?? "";
         const ownerEmail = get().userEmail ?? "";
-        const full: Business = { ...input, id, ownerId, ownerEmail, createdAt: new Date().toISOString().slice(0, 10) };
+        const full: Business = {
+          ...input,
+          id,
+          ownerId,
+          ownerEmail,
+          createdAt: new Date().toISOString().slice(0, 10),
+          plan: "free",
+        };
         const notif: NotificationSettings = { ...emptyNotificationSettings, businessId: id };
 
         set((s) => ({
@@ -521,10 +642,10 @@ export const useAppStore = create<AppState>()(
               : m,
           ),
         }));
-        queueAndFlush({ table: "restock_entries", kind: "upsert", row: toSnakeRow(full) });
+        const restockOpId = queueAndFlush({ table: "restock_entries", kind: "upsert", row: toSnakeRow(full) });
         const material = get().materials.find((m) => m.id === entry.materialId);
         if (material) {
-          queueAndFlush({ table: "materials", kind: "upsert", row: toSnakeRow(material) });
+          queueAndFlush({ table: "materials", kind: "upsert", row: toSnakeRow(material), causedByOpId: restockOpId });
         }
       },
 
@@ -578,10 +699,10 @@ export const useAppStore = create<AppState>()(
             return { ...m, currentStock: Math.max(0, m.currentStock - used.actualQuantity) };
           }),
         }));
-        queueAndFlush({ table: "batches", kind: "upsert", row: toSnakeRow(newBatch) });
+        const batchOpId = queueAndFlush({ table: "batches", kind: "upsert", row: toSnakeRow(newBatch) });
         for (const used of newBatch.materialsUsed) {
           const material = get().materials.find((m) => m.id === used.materialId);
-          if (material) queueAndFlush({ table: "materials", kind: "upsert", row: toSnakeRow(material) });
+          if (material) queueAndFlush({ table: "materials", kind: "upsert", row: toSnakeRow(material), causedByOpId: batchOpId });
         }
         notifyNewlyLowStock(materialsBefore, get().materials, get().products, businessId, get().notificationSettings.lowStockAlerts);
         return id;
