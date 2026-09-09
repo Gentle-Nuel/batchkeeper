@@ -25,6 +25,12 @@ export interface OutboxOp {
   kind: "upsert" | "delete";
   row?: Record<string, unknown>;
   rowId?: string;
+  /** opId of the op this one is a side effect of (e.g. a material
+   * stock-upsert queued right after the batch/restock that caused the
+   * stock change) — lets a permanent rejection of the parent op precisely
+   * discard just ITS dependent ops, not every other still-queued op that
+   * happens to touch the same row (see discardQueuedOpsCausedBy). */
+  causedByOpId?: string;
 }
 
 const OUTBOX_KEY = "production-log-outbox";
@@ -55,10 +61,52 @@ export function outboxLength(): number {
   return loadOutbox().length;
 }
 
-export function enqueue(op: Omit<OutboxOp, "opId">) {
+/** Remove any still-queued ops that were caused by (queued as a side effect
+ * of) the given op, without ever attempting them — matched by opId, NOT by
+ * which row they touch, so this can't accidentally discard an unrelated,
+ * still-legitimate op that happens to touch the same row (e.g. a later,
+ * perfectly valid restock of the same material the rejected batch also
+ * used). Used when a permanently-rejected mutation makes its own
+ * dependent ops moot — e.g. the material stock-deduction op(s) queued
+ * right after a batch that then got rejected for being over the free
+ * plan's cap: that stock change never actually happened server-side and
+ * must never be sent. Safe to call any time; only touches ops that
+ * haven't been sent yet. */
+export function discardQueuedOpsCausedBy(causedByOpId: string): void {
+  saveOutbox(loadOutbox().filter((o) => o.causedByOpId !== causedByOpId));
+}
+
+// A write the server will NEVER accept, no matter how many times it's
+// retried (e.g. it would push a business over its free-plan cap), as
+// opposed to a transient failure (offline, a real blip) where retrying
+// later is the right move. Postgres exceptions raised for this reason
+// (see enforce_entry_cap()/enforce_business_cap() in
+// supabase/migrations/0004_freemium_caps.sql) always start with this fixed,
+// greppable prefix in their message text — simpler and more robust across
+// the PostgREST/supabase-js error-shape layer than relying on a custom
+// SQLSTATE code.
+const PERMANENT_REJECTION_PREFIX = "FREE_PLAN_LIMIT:";
+
+type RejectionListener = (op: OutboxOp, message: string) => void;
+let rejectionListener: RejectionListener | null = null;
+
+/** Register the single handler invoked once, synchronously, right when a
+ * permanent rejection is detected inside the flush loop — not surfaced only
+ * through a caller's own flushOutbox().then(), since several call sites can
+ * be awaiting the very same in-flight flush pass (see the inFlight/
+ * pendingRerun lock below), which would otherwise invoke a naive per-caller
+ * handler more than once for the same rejected op. Only one listener is
+ * ever needed (useAppStore.ts registers it once at store-init time). */
+export function onPermanentRejection(listener: RejectionListener): void {
+  rejectionListener = listener;
+}
+
+export function enqueue(op: Omit<OutboxOp, "opId">): string {
   const ops = loadOutbox();
-  ops.push({ ...op, opId: crypto.randomUUID() });
+  const opId = crypto.randomUUID();
+  ops.push({ ...op, opId });
   saveOutbox(ops);
+  return opId;
 }
 
 // Concurrency guard: mutating actions each call flushOutbox() themselves,
@@ -70,11 +118,12 @@ export function enqueue(op: Omit<OutboxOp, "opId">) {
 // one retry per call. inFlight ensures only one flush runs at a time;
 // pendingRerun ensures a flush requested *during* an in-flight one still
 // happens once the current one finishes, instead of being silently dropped.
-let inFlight: Promise<{ flushed: number; remaining: number }> | null = null;
+let inFlight: Promise<{ flushed: number; remaining: number; rejected: OutboxOp[] }> | null = null;
 let pendingRerun = false;
 
-async function flushOutboxOnce(): Promise<{ flushed: number; remaining: number }> {
+async function flushOutboxOnce(): Promise<{ flushed: number; remaining: number; rejected: OutboxOp[] }> {
   let flushed = 0;
+  const rejected: OutboxOp[] = [];
   while (true) {
     // Re-read fresh on every iteration — NOT a snapshot taken once at the
     // top. A real, silent data-loss bug lived here: several store actions
@@ -111,13 +160,23 @@ async function flushOutboxOnce(): Promise<{ flushed: number; remaining: number }
       // with whatever array happened to be in memory.
       saveOutbox(loadOutbox().filter((o) => o.opId !== op.opId));
       flushed += 1;
-    } catch {
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String((err as { message?: unknown })?.message ?? "");
+      if (message.startsWith(PERMANENT_REJECTION_PREFIX)) {
+        // This op can never succeed — remove it (same as success, just not
+        // counted as flushed) and keep going. Don't let one purged entry
+        // stall every other unrelated queued write sitting behind it.
+        saveOutbox(loadOutbox().filter((o) => o.opId !== op.opId));
+        rejected.push(op);
+        rejectionListener?.(op, message);
+        continue;
+      }
       // Network error (offline) or a real write failure — either way, stop
       // here and leave the remaining queue for the next flush attempt.
       break;
     }
   }
-  return { flushed, remaining: loadOutbox().length };
+  return { flushed, remaining: loadOutbox().length, rejected };
 }
 
 /** Replay queued ops against Supabase, oldest first, stopping at the first
@@ -126,7 +185,7 @@ async function flushOutboxOnce(): Promise<{ flushed: number; remaining: number }
  * manual "Sync Now" tap, and a mutation's own post-write flush can all fire
  * around the same time) — calls are serialized via the lock above rather
  * than each racing the queue independently. */
-export async function flushOutbox(): Promise<{ flushed: number; remaining: number }> {
+export async function flushOutbox(): Promise<{ flushed: number; remaining: number; rejected: OutboxOp[] }> {
   if (inFlight) {
     pendingRerun = true;
     return inFlight;

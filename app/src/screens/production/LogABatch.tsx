@@ -6,6 +6,8 @@ import { useAppStore } from "../../store/useAppStore";
 import { formatQty } from "../../lib/format";
 import type { BatchMaterialUsed } from "../../types/models";
 import { CoachmarkSequence } from "../../components/Coachmark";
+import { ProductionCapBanner } from "../../components/PlanLimitBanner";
+import { useIsOverProductionCap } from "../../lib/planLimits";
 
 /** Shown instead of the form when logging a batch isn't possible yet — a
  * batch consumes a recipe, and a recipe consumes materials, so both have to
@@ -94,10 +96,11 @@ export function LogABatch() {
 
   const plannedYield = product?.targetYield ?? 0;
   const lossQuantity = actualYield === "" ? 0 : Math.max(0, plannedYield - Number(actualYield));
+  const overCap = useIsOverProductionCap(dateMade);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!product) return;
+    if (!product || overCap) return;
     const id = logBatch({
       productCode: product.code,
       productId: product.id,
@@ -148,6 +151,7 @@ export function LogABatch() {
     <div className="pb-8">
       {product && <CoachmarkSequence sequenceId="logABatch.plannedActual" steps={logBatchCoachSteps} />}
       <BackHeader title="Log a Batch" onBack={() => navigate(-1)} />
+      <ProductionCapBanner dateISO={dateMade} />
 
       <form onSubmit={handleSubmit}>
         <Section title="Product">
@@ -259,7 +263,9 @@ export function LogABatch() {
         </Section>
 
         <Section>
-          <PrimaryButton type="submit">Save Batch</PrimaryButton>
+          <PrimaryButton type="submit" disabled={overCap}>
+            Save Batch
+          </PrimaryButton>
         </Section>
       </form>
     </div>

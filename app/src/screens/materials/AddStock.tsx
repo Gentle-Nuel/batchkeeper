@@ -3,6 +3,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useAppStore } from "../../store/useAppStore";
 import { BackHeader, Card, Section, BoxedInput, BoxedTextarea, PrimaryButton, ReadOnlyField } from "../../components/ui";
 import { formatQty } from "../../lib/format";
+import { ProductionCapBanner } from "../../components/PlanLimitBanner";
+import { useIsOverProductionCap } from "../../lib/planLimits";
 
 export function AddStock() {
   const { id } = useParams();
@@ -17,6 +19,7 @@ export function AddStock() {
   const [supplier, setSupplier] = useState(material?.supplier ?? "");
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [note, setNote] = useState("");
+  const overCap = useIsOverProductionCap(date);
 
   if (!material) {
     return (
@@ -31,7 +34,7 @@ export function AddStock() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!material || qty <= 0) return;
+    if (!material || qty <= 0 || overCap) return;
     restockMaterial({
       materialId: material.id,
       date,
@@ -47,6 +50,7 @@ export function AddStock() {
     <div className="pb-8">
       <BackHeader title="Add Stock" onBack={() => navigate(-1)} />
       <p className="px-5 -mt-1 text-[12px] text-text-secondary">{material.name}</p>
+      <ProductionCapBanner dateISO={date} />
 
       <form onSubmit={handleSubmit}>
         <Section title="Current stock">
@@ -86,7 +90,7 @@ export function AddStock() {
         </Section>
 
         <Section>
-          <PrimaryButton type="submit" disabled={qty <= 0}>
+          <PrimaryButton type="submit" disabled={qty <= 0 || overCap}>
             Add Stock
           </PrimaryButton>
         </Section>

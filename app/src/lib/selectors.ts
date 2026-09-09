@@ -1,4 +1,4 @@
-import type { Batch, Material, Product } from "../types/models";
+import type { Batch, Material, Product, RestockEntry } from "../types/models";
 
 export function isLowStock(material: Material): boolean {
   return material.currentStock <= material.reorderPoint;
@@ -39,4 +39,17 @@ export function unitsRemainingForBatch(
   sales: { batchId: string; quantitySold: number }[],
 ): number {
   return Math.max(0, batch.actualYield - unitsSoldForBatch(batch.id, sales));
+}
+
+/** Combined production-entry count (batches + restocks) for one calendar
+ * month, computed from already-loaded local state — no extra query needed.
+ * Mirrors supabase/migrations/0004_freemium_caps.sql's enforce_entry_cap()
+ * exactly (same two tables, same date_trunc('month', ...) logic over each
+ * row's own date field), so the client's live counter never disagrees with
+ * what the database will actually enforce. */
+export function productionEntriesInMonth(batches: Batch[], restocks: RestockEntry[], monthOfDate: string): number {
+  const month = monthOfDate.slice(0, 7); // "YYYY-MM"
+  const batchCount = batches.filter((b) => b.dateMade.slice(0, 7) === month).length;
+  const restockCount = restocks.filter((r) => r.date.slice(0, 7) === month).length;
+  return batchCount + restockCount;
 }

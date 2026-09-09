@@ -27,6 +27,7 @@ export const seedBusiness: Business = {
   currency: "NGN",
   ownerEmail: "owner@example.com",
   createdAt: "2026-08-01",
+  plan: "free",
 };
 
 export const seedMaterials: Material[] = withBusiness<Omit<Material, "businessId">>([

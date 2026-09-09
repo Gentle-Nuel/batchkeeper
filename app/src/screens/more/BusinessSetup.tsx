@@ -4,6 +4,7 @@ import { Building2 } from "lucide-react";
 import { useAppStore } from "../../store/useAppStore";
 import { BackHeader, Card, Section, BoxedInput, BoxedSelect, PrimaryButton } from "../../components/ui";
 import { CURRENCY_OPTIONS } from "../../lib/format";
+import { canAddBusiness } from "../../lib/planLimits";
 
 /** Serves two entry points with the same form: the mandatory first-business
  * step right after signup (no back button, "Continue"), and "+ Add Business"
@@ -28,6 +29,28 @@ export function BusinessSetup() {
   // here would loop. Just needs a signed-in user, business count aside.
   if (!authChecked) return <div className="min-h-screen bg-bg" />;
   if (!isAuthenticated) return <Navigate to="/sign-in" replace />;
+
+  // Free accounts are limited to 1 business (see
+  // supabase/migrations/0004_freemium_caps.sql's enforce_business_cap()) —
+  // this is only the UX-nicety half of that boundary, blocking the form
+  // before it's even shown rather than letting the user fill it out and
+  // then have the write silently purged after the fact.
+  if (!isFirstBusiness && !canAddBusiness(businesses)) {
+    return (
+      <div className="mx-auto min-h-screen w-full max-w-md bg-bg pb-8">
+        <BackHeader title="Add Business" onBack={() => navigate(-1)} />
+        <div className="flex flex-col items-center px-6 py-10 text-center">
+          <span className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-card bg-teal/10 text-teal">
+            <Building2 size={28} />
+          </span>
+          <h2 className="text-[16px] font-semibold text-text">Free accounts are limited to 1 business</h2>
+          <p className="mx-auto mt-1.5 max-w-xs text-[12px] leading-relaxed text-text-secondary">
+            Upgrade this account to add more businesses.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
