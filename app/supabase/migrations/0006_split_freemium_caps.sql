@@ -38,7 +38,17 @@ alter table public.plan_limits
 update public.plan_limits set monthly_batches = 20, monthly_restocks = null, max_products = 1 where plan = 'free';
 update public.plan_limits set monthly_batches = null, monthly_restocks = null, max_products = null where plan = 'paid';
 
-alter table public.plan_limits drop column monthly_entries;
+-- monthly_entries is deliberately NOT dropped here, even though nothing in
+-- this migration reads it anymore. The frontend currently deployed to
+-- production still queries it (loadPlanLimits() in useAppStore.ts on
+-- main/production selects `*` from plan_limits and destructures
+-- row.monthly_entries) — dropping it now would make that column vanish
+-- out from under the live app before the matching frontend deploys,
+-- silently failing open (unlimited) for every real user in the gap
+-- between this migration applying and the new frontend shipping. Left as
+-- a deprecated column; drop it in a follow-up cleanup migration once the
+-- frontend that reads monthly_batches/monthly_restocks/max_products
+-- instead is actually live.
 
 -- ENTRY CAP, split ---------------------------------------------------------
 -- Same function/trigger wiring as 0004 (triggers already exist, this just
