@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Package } from "lucide-react";
 import { useAppStore } from "../../store/useAppStore";
 import {
   BackHeader,
@@ -13,6 +13,7 @@ import {
   FieldLabel,
   ConfirmDialog,
 } from "../../components/ui";
+import { canAddProduct } from "../../lib/planLimits";
 import type { MaterialUnit, NafdacStatus, ProductCategory, RecipeItem } from "../../types/models";
 
 export function ProductDetail() {
@@ -20,6 +21,8 @@ export function ProductDetail() {
   const navigate = useNavigate();
   const products = useAppStore((s) => s.products);
   const materials = useAppStore((s) => s.materials);
+  const business = useAppStore((s) => s.business);
+  const planLimits = useAppStore((s) => s.planLimits);
   const addProduct = useAppStore((s) => s.addProduct);
   const updateProduct = useAppStore((s) => s.updateProduct);
   const removeProduct = useAppStore((s) => s.removeProduct);
@@ -37,6 +40,29 @@ export function ProductDetail() {
   const [nafdacRegNo, setNafdacRegNo] = useState(existing?.nafdacRegNo ?? "");
   const [recipe, setRecipe] = useState<RecipeItem[]>(existing?.recipe ?? []);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+
+  // Free accounts are limited to 1 product/recipe (see
+  // supabase/migrations/0006_split_freemium_caps.sql's enforce_product_cap())
+  // — this is only the UX-nicety half of that boundary, blocking the form
+  // before it's even shown rather than letting the user fill it out and then
+  // have the write silently purged after the fact. Only gates ADDING a new
+  // product — editing an existing one (already counted) is never blocked.
+  if (isNew && !canAddProduct(products, business, planLimits)) {
+    return (
+      <div className="pb-8">
+        <BackHeader title="Add Product" onBack={() => navigate(-1)} />
+        <div className="flex flex-col items-center px-6 py-10 text-center">
+          <span className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-card bg-teal/10 text-teal">
+            <Package size={28} />
+          </span>
+          <h2 className="text-[16px] font-semibold text-text">Free accounts are limited to 1 product</h2>
+          <p className="mx-auto mt-1.5 max-w-xs text-[12px] leading-relaxed text-text-secondary">
+            Upgrade this account to add more products.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   function addRecipeRow() {
     const unused = materials.find((m) => !recipe.some((r) => r.materialId === m.id));

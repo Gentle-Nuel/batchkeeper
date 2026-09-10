@@ -328,8 +328,10 @@ async function loadPlanLimits(): Promise<void> {
   const byPlan: PlanLimitsByPlan = {};
   for (const row of data as Record<string, unknown>[]) {
     byPlan[row.plan as string] = {
-      monthlyEntries: (row.monthly_entries as number | null) ?? null,
+      monthlyBatches: (row.monthly_batches as number | null) ?? null,
+      monthlyRestocks: (row.monthly_restocks as number | null) ?? null,
       maxBusinesses: (row.max_businesses as number | null) ?? null,
+      maxProducts: (row.max_products as number | null) ?? null,
     };
   }
   useAppStore.setState({ planLimits: byPlan });
@@ -341,9 +343,9 @@ let rejectionHandlerRegistered = false;
  * lib/outbox.ts's onPermanentRejection) — purges the corresponding local
  * entity rather than leaving it stuck retrying forever, which is the whole
  * point of the free-plan "purged, not silently dropped" decision. Only
- * batches/restock_entries (the entry cap) and businesses (the 1-business
- * cap) can ever be rejected this way — see
- * supabase/migrations/0004_freemium_caps.sql. */
+ * batches/restock_entries (their own independent caps), businesses (the
+ * 1-business cap), and products (the 1-product cap) can ever be rejected
+ * this way — see supabase/migrations/0006_split_freemium_caps.sql. */
 function registerRejectionHandler() {
   if (rejectionHandlerRegistered) return;
   rejectionHandlerRegistered = true;
@@ -409,6 +411,15 @@ function registerRejectionHandler() {
       useToastStore
         .getState()
         .showToast("Not saved — free accounts are limited to 1 business. Upgrade to add more.", "warning");
+    } else if (op.table === "products") {
+      // addProduct() has no dependent ops queued after it (unlike
+      // batches/restocks, which also queue a material stock-upsert) — just
+      // drop the locally-added product itself, no discard/resync needed.
+      useAppStore.setState((s) => ({ products: s.products.filter((p) => p.id !== id) }));
+
+      useToastStore
+        .getState()
+        .showToast("Not saved — free accounts are limited to 1 product. Upgrade to add more.", "warning");
     }
   });
 }
