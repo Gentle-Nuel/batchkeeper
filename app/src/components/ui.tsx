@@ -77,7 +77,7 @@ function ChevronRightIcon({ flip }: { flip?: boolean }) {
 // ---- Status pills -----------------------------------------------------------
 
 const batchStatusMeta: Record<BatchStatus, { label: string; bg: string; text: string }> = {
-  curing: { label: "CURING", bg: "bg-status-curing-bg", text: "text-status-curing-text" },
+  curing: { label: "PROCESSING", bg: "bg-status-curing-bg", text: "text-status-curing-text" },
   ready: { label: "READY", bg: "bg-status-ready-bg", text: "text-status-ready-text" },
   selling: { label: "SELLING", bg: "bg-status-ready-bg", text: "text-status-ready-text" },
   sold_out: { label: "SOLD OUT", bg: "bg-status-soldout-bg", text: "text-status-soldout-text" },

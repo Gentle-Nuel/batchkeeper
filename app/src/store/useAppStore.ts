@@ -381,7 +381,7 @@ function registerRejectionHandler() {
 
       useToastStore
         .getState()
-        .showToast("Not saved — you've reached this month's free-plan limit. Upgrade to log more.", "warning");
+        .showToast("Not saved: you've reached this month's free-plan limit. Upgrade to log more.", "warning");
     } else if (op.table === "businesses") {
       // addBusiness() always makes the new business the active one
       // immediately, so the rejected business is very likely (though not
@@ -410,7 +410,7 @@ function registerRejectionHandler() {
 
       useToastStore
         .getState()
-        .showToast("Not saved — free accounts are limited to 1 business. Upgrade to add more.", "warning");
+        .showToast("Not saved: free accounts are limited to 1 business. Upgrade to add more.", "warning");
     } else if (op.table === "products") {
       // addProduct() has no dependent ops queued after it (unlike
       // batches/restocks, which also queue a material stock-upsert) — just
@@ -419,7 +419,7 @@ function registerRejectionHandler() {
 
       useToastStore
         .getState()
-        .showToast("Not saved — free accounts are limited to 1 product. Upgrade to add more.", "warning");
+        .showToast("Not saved: free accounts are limited to 1 product. Upgrade to add more.", "warning");
     }
   });
 }
