@@ -18,6 +18,20 @@ import {
 import { canAddProduct } from "../../lib/planLimits";
 import { CATEGORY_PRESETS, UNIT_PRESETS, findCategoryPreset, recipeLabelFor } from "../../lib/presets";
 import type { MaterialUnit, NafdacStatus, ProductCategory, RecipeItem } from "../../types/models";
+import { CoachmarkSequence } from "../../components/Coachmark";
+
+const productDetailCoachSteps = [
+  {
+    targetId: "product-category-input",
+    title: "Not just a dropdown",
+    body: "Type your own category if it's not in the list: jewelry, pottery, whatever you make. The suggestions are only a starting point.",
+  },
+  {
+    targetId: "nafdac-relevant-toggle",
+    title: "NAFDAC, only if it applies",
+    body: "This defaults from what you told us you make, but you decide per product. Turn it off if this one isn't NAFDAC-regulated.",
+  },
+];
 
 export function ProductDetail() {
   const { id } = useParams();
@@ -142,6 +156,7 @@ export function ProductDetail() {
 
   return (
     <div className="pb-8">
+      <CoachmarkSequence sequenceId="productDetail.categoryAndNafdac" steps={productDetailCoachSteps} />
       <BackHeader title={isNew ? "Add Product" : name || "Product"} onBack={() => navigate(-1)} />
 
       <form onSubmit={handleSubmit}>
@@ -152,6 +167,7 @@ export function ProductDetail() {
               <BoxedInput label="Code" value={code} onChange={(e) => setCode(e.target.value)} maxLength={4} required />
             </div>
             <ComboInput
+              id="product-category-input"
               label="Category"
               options={CATEGORY_PRESETS.map((p) => ({ value: p.value, label: p.label }))}
               value={category}
@@ -196,7 +212,7 @@ export function ProductDetail() {
 
         <Section title="NAFDAC">
           <Card className="flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-3">
+            <div id="nafdac-relevant-toggle" className="flex items-center justify-between gap-3">
               <span className="min-w-0 flex-1">
                 <span className="block text-[14px] font-semibold text-text">NAFDAC-relevant</span>
                 <span className="block text-[12px] text-text-secondary">
