@@ -67,10 +67,10 @@ export interface UnitPreset {
 }
 
 export const UNIT_PRESETS: UnitPreset[] = [
-  { value: "g", label: "g — grams" },
-  { value: "kg", label: "kg — kilograms" },
-  { value: "ml", label: "ml — millilitres" },
-  { value: "l", label: "l — litres" },
+  { value: "g", label: "g - grams" },
+  { value: "kg", label: "kg - kilograms" },
+  { value: "ml", label: "ml - millilitres" },
+  { value: "l", label: "l - litres" },
   { value: "piece", label: "piece" },
   { value: "dozen", label: "dozen" },
 ];

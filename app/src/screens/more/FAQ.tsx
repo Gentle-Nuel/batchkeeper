@@ -19,8 +19,8 @@ const faqs = [
     a: "On the sign in screen, tap \"Forgot password?\" and enter your email. We'll send you a link to set a new one.",
   },
   {
-    q: "What do Curing, Ready, Selling, and Sold Out mean for a batch?",
-    a: "Curing means the batch is still setting and not ready to sell yet. Ready means it can be sold. Selling means some units have already been sold. Sold Out means none are left.",
+    q: "What do Processing, Ready, Selling, and Sold Out mean for a batch?",
+    a: "Processing means the batch is still being made and not ready to sell yet. Ready means it can be sold. Selling means some units have already been sold. Sold Out means none are left.",
   },
   {
     q: "Do I need a NAFDAC number to use this app?",

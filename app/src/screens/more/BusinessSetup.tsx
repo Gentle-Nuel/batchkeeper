@@ -130,7 +130,7 @@ export function BusinessSetup() {
               ))}
             </BoxedSelect>
             <p className="text-[12px] text-text-secondary">
-              Just pre-fills sensible defaults on new products — you can change everything later, and this doesn't lock you into one category.
+              Just pre-fills sensible defaults on new products. You can change everything later, and this doesn't lock you into one category.
             </p>
           </Card>
         </Section>
