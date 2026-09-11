@@ -55,7 +55,17 @@ const NON_PLURALIZING_UNITS = new Set(["g", "kg", "ml", "l", "dozen"]);
 
 export function formatQty(qty: number, unit: string): string {
   const trimmed = Number.isInteger(qty) ? qty : Math.round(qty * 100) / 100;
-  return NON_PLURALIZING_UNITS.has(unit.toLowerCase()) ? `${trimmed} ${unit}` : pluralize(trimmed, unit);
+  const lower = unit.toLowerCase();
+  // A unit already ending in "s" (typed that way by the producer, e.g.
+  // "packs") must not get a second one stacked on -- pluralize() would
+  // otherwise turn "packs" into "packss". Treating an already-"s"-ending
+  // unit as effectively already-plural and leaving it untouched is a
+  // deliberately simple guard, not a real singular/plural detector -- it
+  // doesn't (and can't, without a dictionary) turn a genuinely singular
+  // word ending in "s" like "glass" into "glasses" either. Found live: a
+  // real "packs" unit surfaced this the moment it existed.
+  if (NON_PLURALIZING_UNITS.has(lower) || lower.endsWith("s")) return `${trimmed} ${unit}`;
+  return pluralize(trimmed, unit);
 }
 
 export function formatDate(iso: string): string {
