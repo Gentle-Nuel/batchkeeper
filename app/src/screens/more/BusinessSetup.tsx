@@ -5,6 +5,7 @@ import { useAppStore } from "../../store/useAppStore";
 import { BackHeader, Card, Section, BoxedInput, BoxedSelect, PrimaryButton } from "../../components/ui";
 import { CURRENCY_OPTIONS } from "../../lib/format";
 import { canAddBusiness } from "../../lib/planLimits";
+import { CATEGORY_PRESETS } from "../../lib/presets";
 
 /** Serves two entry points with the same form: the mandatory first-business
  * step right after signup (no back button, "Continue"), and "+ Add Business"
@@ -23,6 +24,12 @@ export function BusinessSetup() {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [currency, setCurrency] = useState("NGN");
+  // "What do you make?" — purely a pre-fill source for a new product's
+  // category/unit/NAFDAC/cure defaults (see lib/presets.ts and
+  // ProductDetail.tsx), never enforced. Optional and skippable since
+  // everything it pre-fills is user-overridable on the Product form
+  // anyway; "" means "not sure yet / skip".
+  const [categoryPreset, setCategoryPreset] = useState("");
 
   // Deliberately NOT using the shared RequireAuth/TabLayout gate here — that
   // gate redirects TO this route when a business is needed, so reusing it
@@ -59,6 +66,7 @@ export function BusinessSetup() {
       phone: phone || undefined,
       address: address || undefined,
       currency,
+      defaultCategoryPreset: categoryPreset || undefined,
     });
     navigate(isFirstBusiness ? "/" : "/settings", { replace: isFirstBusiness });
   }
@@ -108,6 +116,22 @@ export function BusinessSetup() {
                 </option>
               ))}
             </BoxedSelect>
+          </Card>
+        </Section>
+
+        <Section title="What do you make? (optional)">
+          <Card className="flex flex-col gap-2">
+            <BoxedSelect value={categoryPreset} onChange={(e) => setCategoryPreset(e.target.value)}>
+              <option value="">Not sure yet / skip</option>
+              {CATEGORY_PRESETS.map((p) => (
+                <option key={p.value} value={p.value}>
+                  {p.label}
+                </option>
+              ))}
+            </BoxedSelect>
+            <p className="text-[12px] text-text-secondary">
+              Just pre-fills sensible defaults on new products — you can change everything later, and this doesn't lock you into one category.
+            </p>
           </Card>
         </Section>
         <Section>
