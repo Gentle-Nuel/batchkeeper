@@ -18,8 +18,12 @@ export function Materials() {
   const materials = useAppStore((s) => s.materials);
   const lowCount = materials.filter(isLowStock).length;
 
+  // pb-24 (96px), not pb-4 -- BottomNav is fixed and 83px tall, so this
+  // screen (rendered behind it, unlike drill-down screens which don't
+  // need this) has to reserve real clearance itself or its last content
+  // ends up hidden behind the nav with no more page to scroll to.
   return (
-    <div className="pb-4">
+    <div className="pb-24">
       {materials.length > 0 && <CoachmarkSequence sequenceId="materials.reorderPoint" steps={materialsCoachSteps} />}
       <PageHeader title="Materials" />
       <p className="px-5 -mt-1 text-[12px] text-text-secondary">

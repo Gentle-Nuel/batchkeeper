@@ -43,9 +43,29 @@ export function pluralize(count: number, singular: string, plural = `${singular}
   return `${count} ${count === 1 ? singular : plural}`;
 }
 
+/** Units that never take a plural "-s" here: SI/metric abbreviations
+ * (g, kg, ml, l -- "2 kgs" is wrong) and "dozen" (English convention is
+ * "2 dozen eggs", not "2 dozens"). Everything else -- a UNIT_PRESETS word
+ * like "piece", or any free-typed custom unit (e.g. "cup") -- pluralizes
+ * with a regular "+s" via the pluralize() helper above. Known limitation:
+ * only handles regular pluralization -- an irregular plural a user might
+ * type (e.g. "loaf" -> "loaves") won't come out right. Not worth a full
+ * irregular-plural dictionary for a display nicety. */
+const NON_PLURALIZING_UNITS = new Set(["g", "kg", "ml", "l", "dozen"]);
+
 export function formatQty(qty: number, unit: string): string {
   const trimmed = Number.isInteger(qty) ? qty : Math.round(qty * 100) / 100;
-  return `${trimmed}${unit}`;
+  const lower = unit.toLowerCase();
+  // A unit already ending in "s" (typed that way by the producer, e.g.
+  // "packs") must not get a second one stacked on -- pluralize() would
+  // otherwise turn "packs" into "packss". Treating an already-"s"-ending
+  // unit as effectively already-plural and leaving it untouched is a
+  // deliberately simple guard, not a real singular/plural detector -- it
+  // doesn't (and can't, without a dictionary) turn a genuinely singular
+  // word ending in "s" like "glass" into "glasses" either. Found live: a
+  // real "packs" unit surfaced this the moment it existed.
+  if (NON_PLURALIZING_UNITS.has(lower) || lower.endsWith("s")) return `${trimmed} ${unit}`;
+  return pluralize(trimmed, unit);
 }
 
 export function formatDate(iso: string): string {
