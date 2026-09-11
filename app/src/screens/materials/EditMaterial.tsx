@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAppStore } from "../../store/useAppStore";
-import { BackHeader, Card, Section, BoxedInput, BoxedSelect, PrimaryButton, DeleteLink, ConfirmDialog } from "../../components/ui";
+import { BackHeader, Card, Section, BoxedInput, ComboInput, PrimaryButton, DeleteLink, ConfirmDialog } from "../../components/ui";
 import { productsUsingMaterial } from "../../lib/selectors";
+import { UNIT_PRESETS } from "../../lib/presets";
 import type { MaterialUnit } from "../../types/models";
 
 export function EditMaterial() {
@@ -69,12 +70,13 @@ export function EditMaterial() {
 
         <Section>
           <Card className="grid grid-cols-2 gap-3">
-            <BoxedSelect label="Unit" value={unit} onChange={(e) => setUnit(e.target.value as MaterialUnit)}>
-              <option value="g">g</option>
-              <option value="kg">kg</option>
-              <option value="ml">ml</option>
-              <option value="l">l</option>
-            </BoxedSelect>
+            <ComboInput
+              label="Unit"
+              options={UNIT_PRESETS}
+              value={unit}
+              onChange={(e) => setUnit(e.target.value as MaterialUnit)}
+              required
+            />
             <BoxedInput
               label="Cost / Unit"
               type="number"

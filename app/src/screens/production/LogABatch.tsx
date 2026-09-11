@@ -8,6 +8,7 @@ import type { BatchMaterialUsed } from "../../types/models";
 import { CoachmarkSequence } from "../../components/Coachmark";
 import { ProductionCapBanner } from "../../components/PlanLimitBanner";
 import { useIsOverBatchCap } from "../../lib/planLimits";
+import { findCategoryPreset } from "../../lib/presets";
 
 /** Shown instead of the form when logging a batch isn't possible yet — a
  * batch consumes a recipe, and a recipe consumes materials, so both have to
@@ -71,19 +72,24 @@ export function LogABatch() {
   const [labourCost, setLabourCost] = useState<number | "">("");
 
   const product = products.find((p) => p.id === productId);
+  const categoryPreset = findCategoryPreset(product?.category);
 
-  // Soap needs weeks to cure — suggest a sensible starting point (4 weeks,
-  // the commonly-cited minimum) rather than leaving it to be calculated by
-  // hand every time. Only fills an empty field, never overwrites a value
-  // she's already set or edited herself.
+  // Some verticals need a curing/settling/processing period before
+  // ready-to-sell (soap curing, candle setting, pottery firing...) — see
+  // lib/presets.ts's hasCureStage/defaultCureDays. Suggest a sensible
+  // starting point per the product's category preset rather than a
+  // hardcoded category === "soap" check, which broke the moment category
+  // became an open string (see memory:batchkeeper-vertical-expansion-plan
+  // finding #6). Only fills an empty field, never overwrites a value
+  // already set or edited manually.
   useEffect(() => {
-    if (product?.category === "soap" && !cureReadyDate) {
+    if (categoryPreset?.hasCureStage && !cureReadyDate) {
       const d = new Date(dateMade);
-      d.setDate(d.getDate() + 28);
+      d.setDate(d.getDate() + (categoryPreset.defaultCureDays ?? 28));
       setCureReadyDate(d.toISOString().slice(0, 10));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [product?.category, dateMade]);
+  }, [categoryPreset, dateMade]);
 
   const planned: BatchMaterialUsed[] = useMemo(() => {
     if (!product) return [];
@@ -167,7 +173,7 @@ export function LogABatch() {
         <Section title="Batch details">
           <Card className="flex flex-col gap-3">
             <BoxedInput label="Date made" type="date" value={dateMade} onChange={(e) => setDateMade(e.target.value)} required />
-            {product?.category === "soap" && (
+            {categoryPreset?.hasCureStage && (
               <BoxedInput
                 label="Target ready date"
                 type="date"
