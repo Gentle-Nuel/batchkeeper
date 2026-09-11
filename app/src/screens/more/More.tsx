@@ -5,8 +5,10 @@ import { PageHeader, Section, MenuRow } from "../../components/ui";
 export function More() {
   const navigate = useNavigate();
 
+  // pb-24, not pb-4 -- see Materials.tsx's identical comment: BottomNav
+  // is fixed/83px, this screen needs to reserve real clearance itself.
   return (
-    <div className="pb-4">
+    <div className="pb-24">
       <PageHeader title="More" />
 
       <Section title="Business">

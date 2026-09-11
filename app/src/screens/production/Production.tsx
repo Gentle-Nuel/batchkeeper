@@ -30,8 +30,10 @@ export function Production() {
   const readyCount = batches.filter((b) => b.status === "ready" || b.status === "selling").length;
   const recentBatches = sortByDateDesc(batches).slice(0, 3);
 
+  // pb-24, not pb-4 -- see Materials.tsx's identical comment: BottomNav
+  // is fixed/83px, this screen needs to reserve real clearance itself.
   return (
-    <div className="pb-4">
+    <div className="pb-24">
       <CoachmarkSequence sequenceId="production.intro" steps={productionCoachSteps} />
       <PageHeader title="Production" />
 

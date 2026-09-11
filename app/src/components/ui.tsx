@@ -30,6 +30,14 @@ export function SyncBadge() {
 
 // ---- Page header ----------------------------------------------------------
 
+// Both headers are sticky so the title (and, on BackHeader, the only way
+// back) stay reachable on any screen long enough to scroll -- previously
+// plain in-flow divs, so scrolling down on e.g. Settings took the back
+// button off-screen with no way to invoke it short of scrolling all the
+// way back up. An explicit bg-bg is required for a sticky element to look
+// right over scrolling content underneath it (otherwise the content shows
+// through beneath what should read as an opaque bar). z-20 sits below
+// BottomNav's z-30 and ConfirmDialog's z-40, so neither gets covered.
 export function PageHeader({
   title,
   showSync = true,
@@ -40,7 +48,7 @@ export function PageHeader({
   right?: ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between px-5 pt-5 pb-2">
+    <div className="sticky top-0 z-20 flex items-center justify-between bg-bg px-5 pt-5 pb-2">
       <h1 className="text-[24px] font-semibold text-text leading-tight">{title}</h1>
       <div className="flex items-center gap-2">
         {right}
@@ -52,7 +60,7 @@ export function PageHeader({
 
 export function BackHeader({ title, onBack, right }: { title: string; onBack: () => void; right?: ReactNode }) {
   return (
-    <div className="flex items-center gap-3 px-5 pt-5 pb-2">
+    <div className="sticky top-0 z-20 flex items-center gap-3 bg-bg px-5 pt-5 pb-2">
       <button
         onClick={onBack}
         aria-label="Back"
