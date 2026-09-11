@@ -30,7 +30,7 @@ export interface Business {
   // category/unit/NAFDAC/cure defaults, read once at Add Product time.
   // Never enforced, never re-read after that; a business isn't locked into
   // one vertical, and this field intentionally has no edit UI of its own —
-  // added supabase/migrations/0007_generalize_verticals.sql.
+  // added supabase/migrations/0008_generalize_verticals.sql.
   defaultCategoryPreset?: string;
 }
 
@@ -90,7 +90,7 @@ export interface Product {
   // list may not be exhaustive/correct for it anyway). Defaulted from the
   // chosen category preset (see lib/presets.ts) but always overridable.
   // The NAFDAC section only renders in the UI when this is true. Added
-  // supabase/migrations/0007_generalize_verticals.sql, backfilled true for
+  // supabase/migrations/0008_generalize_verticals.sql, backfilled true for
   // every existing row (today's 3 categories are all NAFDAC-relevant).
   nafdacRelevant: boolean;
   nafdacStatus: NafdacStatus;
