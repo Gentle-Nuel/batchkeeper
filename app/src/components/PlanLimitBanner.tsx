@@ -7,7 +7,7 @@ import { batchCapForBusiness, restockCapForBusiness, isNearCap, isOverCap } from
  * entry point that counts against the corresponding free-plan cap (Log a
  * Batch for `kind="batch"`, Add Stock for `kind="restock"`) — mirrors the
  * server-side enforcement in
- * supabase/migrations/0006_split_freemium_caps.sql. Batches and restocks
+ * supabase/migrations/0007_split_freemium_caps.sql. Batches and restocks
  * are capped independently (not summed) — see that migration's comment for
  * why — so this renders nothing for `kind="restock"` while restocks remain
  * uncapped, the free-tier default today. Purely a UX convenience, computed

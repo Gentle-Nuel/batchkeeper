@@ -71,7 +71,7 @@ export function ProductDetail() {
   }, [category]);
 
   // Free accounts are limited to 1 product/recipe (see
-  // supabase/migrations/0006_split_freemium_caps.sql's enforce_product_cap())
+  // supabase/migrations/0007_split_freemium_caps.sql's enforce_product_cap())
   // — this is only the UX-nicety half of that boundary, blocking the form
   // before it's even shown rather than letting the user fill it out and then
   // have the write silently purged after the fact. Only gates ADDING a new

@@ -345,7 +345,7 @@ let rejectionHandlerRegistered = false;
  * point of the free-plan "purged, not silently dropped" decision. Only
  * batches/restock_entries (their own independent caps), businesses (the
  * 1-business cap), and products (the 1-product cap) can ever be rejected
- * this way — see supabase/migrations/0006_split_freemium_caps.sql. */
+ * this way — see supabase/migrations/0007_split_freemium_caps.sql. */
 function registerRejectionHandler() {
   if (rejectionHandlerRegistered) return;
   rejectionHandlerRegistered = true;
