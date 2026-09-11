@@ -4,7 +4,7 @@ import { useAppStore } from "../../store/useAppStore";
 import { BackHeader, Card, Section, BoxedInput, BoxedTextarea, PrimaryButton, ReadOnlyField } from "../../components/ui";
 import { formatQty } from "../../lib/format";
 import { ProductionCapBanner } from "../../components/PlanLimitBanner";
-import { useIsOverProductionCap } from "../../lib/planLimits";
+import { useIsOverRestockCap } from "../../lib/planLimits";
 
 export function AddStock() {
   const { id } = useParams();
@@ -19,7 +19,7 @@ export function AddStock() {
   const [supplier, setSupplier] = useState(material?.supplier ?? "");
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [note, setNote] = useState("");
-  const overCap = useIsOverProductionCap(date);
+  const overCap = useIsOverRestockCap(date);
 
   if (!material) {
     return (
@@ -50,7 +50,7 @@ export function AddStock() {
     <div className="pb-8">
       <BackHeader title="Add Stock" onBack={() => navigate(-1)} />
       <p className="px-5 -mt-1 text-[12px] text-text-secondary">{material.name}</p>
-      <ProductionCapBanner dateISO={date} />
+      <ProductionCapBanner dateISO={date} kind="restock" />
 
       <form onSubmit={handleSubmit}>
         <Section title="Current stock">

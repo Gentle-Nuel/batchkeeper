@@ -41,15 +41,21 @@ export function unitsRemainingForBatch(
   return Math.max(0, batch.actualYield - unitsSoldForBatch(batch.id, sales));
 }
 
-/** Combined production-entry count (batches + restocks) for one calendar
- * month, computed from already-loaded local state — no extra query needed.
- * Mirrors supabase/migrations/0004_freemium_caps.sql's enforce_entry_cap()
- * exactly (same two tables, same date_trunc('month', ...) logic over each
- * row's own date field), so the client's live counter never disagrees with
- * what the database will actually enforce. */
-export function productionEntriesInMonth(batches: Batch[], restocks: RestockEntry[], monthOfDate: string): number {
+/** Batch count for one calendar month, computed from already-loaded local
+ * state — no extra query needed. Mirrors
+ * supabase/migrations/0006_split_freemium_caps.sql's enforce_entry_cap()
+ * exactly (same date_trunc('month', ...) logic over the row's own
+ * date_made field), so the client's live counter never disagrees with what
+ * the database will actually enforce. Kept separate from restocksInMonth —
+ * batches and restocks are capped independently, not summed (see the 0006
+ * migration's comment for why). */
+export function batchesInMonth(batches: Batch[], monthOfDate: string): number {
   const month = monthOfDate.slice(0, 7); // "YYYY-MM"
-  const batchCount = batches.filter((b) => b.dateMade.slice(0, 7) === month).length;
-  const restockCount = restocks.filter((r) => r.date.slice(0, 7) === month).length;
-  return batchCount + restockCount;
+  return batches.filter((b) => b.dateMade.slice(0, 7) === month).length;
+}
+
+/** Restock count for one calendar month — see batchesInMonth above. */
+export function restocksInMonth(restocks: RestockEntry[], monthOfDate: string): number {
+  const month = monthOfDate.slice(0, 7);
+  return restocks.filter((r) => r.date.slice(0, 7) === month).length;
 }
