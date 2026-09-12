@@ -44,14 +44,19 @@ export function pluralize(count: number, singular: string, plural = `${singular}
 }
 
 /** Units that never take a plural "-s" here: SI/metric abbreviations
- * (g, kg, ml, l -- "2 kgs" is wrong) and "dozen" (English convention is
- * "2 dozen eggs", not "2 dozens"). Everything else -- a UNIT_PRESETS word
- * like "piece", or any free-typed custom unit (e.g. "cup") -- pluralizes
- * with a regular "+s" via the pluralize() helper above. Known limitation:
- * only handles regular pluralization -- an irregular plural a user might
- * type (e.g. "loaf" -> "loaves") won't come out right. Not worth a full
- * irregular-plural dictionary for a display nicety. */
-const NON_PLURALIZING_UNITS = new Set(["g", "kg", "ml", "l", "dozen"]);
+ * (g, kg, ml, l, m -- "2 kgs"/"2 ms" is wrong, and "ms" doubly so since it
+ * reads as milliseconds) and "dozen" (English convention is "2 dozen
+ * eggs", not "2 dozens"). "m" wasn't in the original list -- it's not in
+ * UNIT_PRESETS -- but it's a very natural free-typed unit for the
+ * vertical-expansion work (fabric/wire/ribbon length for textile/jewelry
+ * makers), found live via the jewelry walkthrough. Everything else -- a
+ * UNIT_PRESETS word like "piece", or any free-typed custom unit (e.g.
+ * "cup") -- pluralizes with a regular "+s" via the pluralize() helper
+ * below. Known limitation: only handles regular pluralization -- an
+ * irregular plural a user might type (e.g. "loaf" -> "loaves") won't come
+ * out right. Not worth a full irregular-plural dictionary for a display
+ * nicety. */
+const NON_PLURALIZING_UNITS = new Set(["g", "kg", "ml", "l", "m", "dozen"]);
 
 export function formatQty(qty: number, unit: string): string {
   const trimmed = Number.isInteger(qty) ? qty : Math.round(qty * 100) / 100;
