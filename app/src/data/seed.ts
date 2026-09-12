@@ -262,26 +262,6 @@ export const seedRestocks: RestockEntry[] = withBusiness<Omit<RestockEntry, "bus
   { id: "restock-3", materialId: "mat-naoh", date: "2026-07-15", quantity: 3, costPerUnit: 1750, supplier: "ChemSource Nigeria" },
 ]);
 
-// Historical months before app adoption (this month, Aug 2026, is when she
-// started using it) only have summary P&L, not batch-level detail — matches
-// how she "currently tracks things informally" per the brief. Aug figures
-// below are placeholders too; the real Aug number is computed from seed data
-// in lib/reports.ts and supersedes this entry.
-export const seedMonthlyTrend: { year: number; month: number; revenue: number; costs: number }[] = [
-  { year: 2026, month: 2, revenue: 58000, costs: 51000 }, // Mar
-  { year: 2026, month: 3, revenue: 71000, costs: 57000 }, // Apr
-  { year: 2026, month: 4, revenue: 52000, costs: 60000 }, // May (loss)
-  { year: 2026, month: 5, revenue: 45000, costs: 56000 }, // Jun (loss)
-];
-
-// Fixed allocation used only for the pre-adoption, summary-only months above,
-// where there's no batch/sale detail to compute a real per-product split from.
-export const legacyProductSplit: Record<string, number> = {
-  "prod-bodycream": 0.45,
-  "prod-soapbara": 0.35,
-  "prod-disinfectant": 0.2,
-};
-
 export const seedNotificationSettings: NotificationSettings = {
   businessId: DEMO_BUSINESS_ID,
   lowStockAlerts: true,

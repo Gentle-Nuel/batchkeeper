@@ -1,5 +1,4 @@
 import type { Batch, Material, Product, Sale } from "../types/models";
-import { legacyProductSplit, seedMonthlyTrend } from "../data/seed";
 import { monthLabel } from "./format";
 
 export function batchMaterialsCost(batch: Batch, materials: Material[]): number {
@@ -46,11 +45,10 @@ export interface PeriodSummary {
   profit: number;
   margin: number; // -1..1
   isLoss: boolean;
-  isComputed: boolean; // real batch/sale data vs. pre-adoption summary seed
   byProduct: ProductSplit[];
 }
 
-/** Real P&L for a month computed from actual batches/sales (used from Jul 2026 onward). */
+/** Real P&L for a month, computed entirely from actual batches/sales. */
 export function computeRealPeriod(
   year: number,
   month: number,
@@ -85,39 +83,6 @@ export function computeRealPeriod(
     profit,
     margin: revenue > 0 ? profit / revenue : 0,
     isLoss: profit < 0,
-    isComputed: true,
-    byProduct,
-  };
-}
-
-/** Pre-adoption month: only summary revenue/costs were seeded, no batch detail. */
-export function legacyPeriod(
-  year: number,
-  month: number,
-  products: Product[],
-): PeriodSummary | undefined {
-  const seed = seedMonthlyTrend.find((s) => s.year === year && s.month === month);
-  if (!seed) return undefined;
-  const profit = seed.revenue - seed.costs;
-  const byProduct: ProductSplit[] = products.map((p) => {
-    const ratio = legacyProductSplit[p.id] ?? 1 / products.length;
-    return {
-      productId: p.id,
-      revenue: Math.round(seed.revenue * ratio),
-      costs: Math.round(seed.costs * ratio),
-      profit: Math.round(profit * ratio),
-    };
-  });
-  return {
-    year,
-    month,
-    label: monthLabel(month),
-    revenue: seed.revenue,
-    costs: seed.costs,
-    profit,
-    margin: seed.revenue > 0 ? profit / seed.revenue : 0,
-    isLoss: profit < 0,
-    isComputed: false,
     byProduct,
   };
 }
@@ -130,8 +95,6 @@ export function getPeriod(
   materials: Material[],
   products: Product[],
 ): PeriodSummary {
-  const legacy = legacyPeriod(year, month, products);
-  if (legacy) return legacy;
   return computeRealPeriod(year, month, batches, sales, materials, products);
 }
 
