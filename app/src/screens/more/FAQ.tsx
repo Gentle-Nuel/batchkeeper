@@ -11,6 +11,14 @@ const faqs = [
   { q: "Can I use the app without an internet connection?", a: "Yes. See Sync & Offline Data in Settings." },
   { q: "How do I change a product's recipe?", a: "Open the product from Products & Recipes and edit its Recipe section." },
   {
+    q: "Can I use my own category or unit instead of the suggested ones?",
+    a: "Yes. Category and Unit only suggest common options. Type whatever actually fits your business instead, like pottery, jewelry, cup, or tray.",
+  },
+  {
+    q: "How many products can I add on the free plan?",
+    a: "Free accounts are limited to 1 product and its recipe. Upgrade to add more.",
+  },
+  {
     q: "What does \"waiting to sync\" mean?",
     a: "It means some of your entries are saved on your phone but haven't reached the cloud yet, usually because you're offline. They'll sync automatically once you're back online, and nothing is lost in the meantime.",
   },
@@ -27,8 +35,16 @@ const faqs = [
     a: "No. You can mark a product as Not Registered, In Process, or Registered, whichever is true for you right now, and update it later once your status changes.",
   },
   {
+    q: "What if my product isn't regulated by NAFDAC at all?",
+    a: "Turn off NAFDAC-relevant when adding or editing that product. Its status and registration number fields disappear since they don't apply, and it won't show a NAFDAC status anywhere else in the app.",
+  },
+  {
     q: "How do I add stock when I buy more raw materials?",
     a: "Open the material from the Materials tab and tap Restock. Enter how much you bought and its cost, and your stock level updates right away.",
+  },
+  {
+    q: "Is there a limit on how many batches or restocks I can log?",
+    a: "Free accounts can log up to 20 batches a month. Restocking materials has no limit on any plan.",
   },
   {
     q: "Can I run more than one business in this app?",
