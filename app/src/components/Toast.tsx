@@ -147,8 +147,12 @@ export function Toast() {
     if (runRef.current) {
       const live = runRef.current.stop();
       runRef.current = null;
-      yRef.current = live.value;
-      resume = { target: leavingIdRef.current ? offscreen() : 0, velocity: live.velocity };
+      // Only a spring still in flight is an interruption; a finished one just
+      // remembers where it ended, which may not be where the toast is now.
+      if (live.running) {
+        yRef.current = live.value;
+        resume = { target: leavingIdRef.current ? offscreen() : 0, velocity: live.velocity };
+      }
     }
     dragRef.current = { id: e.pointerId, y0: e.clientY, startY: yRef.current, active: false, samples: [], resume };
   }

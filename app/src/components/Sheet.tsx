@@ -199,8 +199,12 @@ export function Sheet({
     if (runRef.current) {
       const live = runRef.current.stop();
       runRef.current = null;
-      yRef.current = live.value;
-      resume = { target: exitingRef.current ? heightRef.current : 0, velocity: live.velocity };
+      // Only a spring still in flight is an interruption; a finished one just
+      // remembers where it ended, which may not be where the sheet is now.
+      if (live.running) {
+        yRef.current = live.value;
+        resume = { target: exitingRef.current ? heightRef.current : 0, velocity: live.velocity };
+      }
     }
     dragRef.current = { id: e.pointerId, x0: e.clientX, y0: e.clientY, sheetY0: yRef.current, active: false, samples: [], resume };
   }

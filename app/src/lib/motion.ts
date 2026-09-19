@@ -70,8 +70,13 @@ export function springAt(t: number, offset0: number, velocity0: number, { dampin
 export interface SpringRun {
   /** Stops the animation where it is and returns the live value and velocity,
    * so a new gesture (or a new spring) can take over from exactly here with no
-   * jump. Safe to call after it has already finished. */
-  stop: () => { value: number; velocity: number };
+   * jump. Safe to call after it has already finished.
+   *
+   * `running` is false when it had already finished: `value` is then only where
+   * that spring ended up, which is not necessarily where the thing is now (a
+   * later jump may have moved it). Treat only a `running` stop as an
+   * interruption, and read the real position from your own state otherwise. */
+  stop: () => { value: number; velocity: number; running: boolean };
 }
 
 /**
@@ -117,11 +122,12 @@ export function runSpring({
 
   return {
     stop: () => {
-      if (!finished) {
+      const running = !finished;
+      if (running) {
         finished = true;
         cancelAnimationFrame(raf);
       }
-      return last;
+      return { ...last, running };
     },
   };
 }
