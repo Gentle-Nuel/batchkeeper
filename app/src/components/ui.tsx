@@ -35,10 +35,28 @@ export function SyncBadge() {
 // back) stay reachable on any screen long enough to scroll -- previously
 // plain in-flow divs, so scrolling down on e.g. Settings took the back
 // button off-screen with no way to invoke it short of scrolling all the
-// way back up. An explicit bg-bg is required for a sticky element to look
-// right over scrolling content underneath it (otherwise the content shows
-// through beneath what should read as an opaque bar). z-20 sits below
-// BottomNav's z-30 and ConfirmDialog's z-40, so neither gets covered.
+// way back up. They are translucent (see .material-header in index.css):
+// the page colour at 80% with a light blur, so content scrolls under them
+// instead of being sliced off by an opaque strip. A hairline appears under
+// them only once the page has scrolled, i.e. only when something is
+// actually passing beneath, and never shifts the layout (it is a shadow, not
+// a border). z-20 sits below BottomNav's z-30 and the sheet's z-50, so
+// neither gets covered.
+const headerLine = "shadow-[0_1px_0_0_var(--color-border)]";
+
+/** True once the page has scrolled at all. A sticky bar uses it to show a
+ * hairline only when content is passing under it, rather than always. */
+function useScrolled() {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const update = () => setScrolled(window.scrollY > 1);
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    return () => window.removeEventListener("scroll", update);
+  }, []);
+  return scrolled;
+}
+
 export function PageHeader({
   title,
   showSync = true,
@@ -48,8 +66,13 @@ export function PageHeader({
   showSync?: boolean;
   right?: ReactNode;
 }) {
+  const scrolled = useScrolled();
   return (
-    <div className="sticky top-0 z-20 flex items-center justify-between bg-bg px-5 pt-5 pb-2">
+    <div
+      className={`material-header sticky top-0 z-20 flex items-center justify-between px-5 pt-5 pb-2 transition-shadow duration-200 ${
+        scrolled ? headerLine : ""
+      }`}
+    >
       <h1 className="text-[24px] font-semibold text-text leading-tight">{title}</h1>
       <div className="flex items-center gap-2">
         {right}
@@ -60,8 +83,13 @@ export function PageHeader({
 }
 
 export function BackHeader({ title, onBack, right }: { title: string; onBack: () => void; right?: ReactNode }) {
+  const scrolled = useScrolled();
   return (
-    <div className="sticky top-0 z-20 flex items-center gap-3 bg-bg px-5 pt-5 pb-2">
+    <div
+      className={`material-header sticky top-0 z-20 flex items-center gap-3 px-5 pt-5 pb-2 transition-shadow duration-200 ${
+        scrolled ? headerLine : ""
+      }`}
+    >
       <button
         onClick={onBack}
         aria-label="Back"

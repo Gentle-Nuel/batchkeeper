@@ -9,7 +9,7 @@ const tabs = [
 
 export function BottomNav() {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 mx-auto flex h-[83px] w-full max-w-md items-stretch border-t border-border bg-surface">
+    <nav className="material-nav fixed inset-x-0 bottom-0 z-30 mx-auto flex h-[83px] w-full max-w-md items-stretch border-t border-border">
       {tabs.map((tab) => (
         <NavLink
           key={tab.to}

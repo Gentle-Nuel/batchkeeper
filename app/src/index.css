@@ -93,6 +93,62 @@ body {
   }
 }
 
+/* Translucent chrome. The bottom nav and the sticky page headers are a floating
+   layer over the content scrolling underneath: their own colour (the same
+   tokens as before) at 80%, with a light blur so text passing behind stays
+   legible. At rest, over the plain page background, they look identical to the
+   old opaque bars; the difference only shows once content moves under them.
+   Blur is kept modest and there is no saturate() pass because these bars
+   re-blur on every scrolled frame, which is what low-end Android struggles
+   with. To turn it off everywhere, delete the backdrop-filter lines below. */
+@layer components {
+  .material-nav,
+  .material-header {
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+  }
+  .material-nav {
+    background-color: color-mix(in srgb, var(--color-surface) 80%, transparent);
+  }
+  .material-header {
+    background-color: color-mix(in srgb, var(--color-bg) 80%, transparent);
+  }
+
+  /* Browsers without backdrop-filter get the original solid bars, since a
+     see-through bar without the blur would just be hard to read. */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .material-nav {
+      background-color: var(--color-surface);
+    }
+    .material-header {
+      background-color: var(--color-bg);
+    }
+  }
+
+  /* People who ask for less transparency, or more contrast, get solid bars. */
+  @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+    .material-nav,
+    .material-header {
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+    .material-nav {
+      background-color: var(--color-surface);
+    }
+    .material-header {
+      background-color: var(--color-bg);
+    }
+  }
+  @media (prefers-contrast: more) {
+    .material-nav {
+      border-top-color: var(--color-text-secondary);
+    }
+    .material-header {
+      box-shadow: 0 1px 0 0 var(--color-text-secondary);
+    }
+  }
+}
+
 /* Coachmark popover arrival: grows out of the edge facing the element it is
    explaining (transform-origin and --coach-shift are set inline per placement).
    Reduced motion swaps the movement for a plain fade. */
