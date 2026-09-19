@@ -30,7 +30,7 @@ export function Products() {
                 <p className="truncate text-[14px] font-semibold text-text">{p.name}</p>
                 <p className="text-[12px] capitalize text-text-secondary">{p.category}</p>
               </div>
-              {p.nafdacRelevant && <NafdacPill status={p.nafdacStatus} />}
+              <NafdacPill status={p.nafdacStatus} />
             </Link>
           ))}
           {products.length === 0 && (

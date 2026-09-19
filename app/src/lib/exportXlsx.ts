@@ -59,9 +59,8 @@ export function buildExportWorkbook(data: AccountExport): XLSX.WorkBook {
         "Batch Size": p.standardBatchSize,
         "Batch Unit": p.standardBatchUnit,
         "Target Yield": p.targetYield,
-        "NAFDAC Relevant": p.nafdacRelevant ? "Yes" : "No",
-        "NAFDAC Status": p.nafdacRelevant ? p.nafdacStatus.replace("_", " ") : "N/A",
-        "NAFDAC Reg. No.": p.nafdacRelevant ? p.nafdacRegNo || "None" : "N/A",
+        "NAFDAC Status": p.nafdacStatus.replace("_", " "),
+        "NAFDAC Reg. No.": p.nafdacRegNo || "None",
         Recipe: recipeSummary(p.recipe, materialsById),
       });
     }

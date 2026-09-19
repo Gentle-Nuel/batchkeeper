@@ -1,4 +1,4 @@
-import { useId, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { ChevronRight, RefreshCw, Check, CloudOff, Eye, EyeOff, Circle } from "lucide-react";
 import { useAppStore } from "../store/useAppStore";
 import type { BatchStatus, NafdacStatus } from "../types/models";
@@ -232,39 +232,6 @@ export function BoxedSelect({
       >
         {children}
       </select>
-    </label>
-  );
-}
-
-/** A free-text input backed by a native <datalist> of suggestions — used
- * for fields opened up from a closed enum to a curated preset list (product
- * category, material/batch unit; see lib/presets.ts). Reads exactly like
- * BoxedInput but offers autocomplete instead of forcing one of a fixed set
- * of options: presets are suggestions, never a hard constraint. */
-export function ComboInput({
-  label,
-  options,
-  ...props
-}: { label?: string; options: { value: string; label: string }[] } & React.InputHTMLAttributes<HTMLInputElement>) {
-  const listId = useId();
-  return (
-    <label className="block">
-      {label && <FieldLabel>{label}</FieldLabel>}
-      <input
-        {...props}
-        list={listId}
-        className={`w-full rounded-input border border-border bg-input-fill px-3 py-2.5 text-[14px] text-text outline-none focus:border-teal ${props.className ?? ""}`}
-      />
-      {/* Native <datalist> renders the "value" attribute in its suggestion
-       * dropdown, not an <option>'s children text — the "label" attribute
-       * is what browsers show as the friendly secondary text (Chrome/
-       * Firefox render it as "value — label"). Passing options.label as
-       * children would silently never appear in the actual dropdown. */}
-      <datalist id={listId}>
-        {options.map((o) => (
-          <option key={o.value} value={o.value} label={o.label} />
-        ))}
-      </datalist>
     </label>
   );
 }

@@ -25,22 +25,9 @@ export interface Business {
   // supabase/migrations/0004_freemium_caps.sql (monthly production-entry
   // count, businesses-per-account) — see src/lib/planLimits.ts.
   plan: PlanTier;
-  // "What do you make?" choice from Business Setup (see lib/presets.ts's
-  // CATEGORY_PRESETS) — purely a pre-fill source for a NEW product's
-  // category/unit/NAFDAC/cure defaults, read once at Add Product time.
-  // Never enforced, never re-read after that; a business isn't locked into
-  // one vertical, and this field intentionally has no edit UI of its own —
-  // added supabase/migrations/0008_generalize_verticals.sql.
-  defaultCategoryPreset?: string;
 }
 
-// Open string, not a closed union — see supabase/migrations/0007's comment
-// and memory:batchkeeper-vertical-expansion-plan. Postgres already stores
-// this as plain `text` with no CHECK constraint (0001_init.sql), so this
-// was always a TypeScript-only wall, not a real schema one. lib/presets.ts
-// holds the curated suggestion list; anything else the user types is
-// equally valid.
-export type MaterialUnit = string;
+export type MaterialUnit = "g" | "ml" | "kg" | "l";
 
 export interface Material {
   id: string;
@@ -65,9 +52,7 @@ export interface RestockEntry {
   note?: string;
 }
 
-// Open string, same reasoning as MaterialUnit above — lib/presets.ts's
-// CATEGORY_PRESETS is the curated suggestion list, not an exhaustive enum.
-export type ProductCategory = string;
+export type ProductCategory = "soap" | "cosmetic" | "cleaning agent";
 export type NafdacStatus = "not_registered" | "in_process" | "registered";
 
 export interface RecipeItem {
@@ -84,15 +69,6 @@ export interface Product {
   standardBatchSize: number;
   standardBatchUnit: MaterialUnit;
   targetYield: number;
-  // Whether NAFDAC applies to this product at all — a producer-controlled
-  // toggle, not a category->NAFDAC legal determination baked into the app
-  // (that's a legal judgment call the app shouldn't make, and the category
-  // list may not be exhaustive/correct for it anyway). Defaulted from the
-  // chosen category preset (see lib/presets.ts) but always overridable.
-  // The NAFDAC section only renders in the UI when this is true. Added
-  // supabase/migrations/0008_generalize_verticals.sql, backfilled true for
-  // every existing row (today's 3 categories are all NAFDAC-relevant).
-  nafdacRelevant: boolean;
   nafdacStatus: NafdacStatus;
   nafdacRegNo?: string;
   recipe: RecipeItem[];

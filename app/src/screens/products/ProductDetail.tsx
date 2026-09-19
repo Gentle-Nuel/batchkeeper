@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Plus, X, Package } from "lucide-react";
 import { useAppStore } from "../../store/useAppStore";
@@ -8,30 +8,13 @@ import {
   Section,
   BoxedInput,
   BoxedSelect,
-  ComboInput,
   PrimaryButton,
   DeleteLink,
   FieldLabel,
   ConfirmDialog,
-  Toggle,
 } from "../../components/ui";
 import { canAddProduct } from "../../lib/planLimits";
-import { CATEGORY_PRESETS, UNIT_PRESETS, findCategoryPreset, recipeLabelFor } from "../../lib/presets";
 import type { MaterialUnit, NafdacStatus, ProductCategory, RecipeItem } from "../../types/models";
-import { CoachmarkSequence } from "../../components/Coachmark";
-
-const productDetailCoachSteps = [
-  {
-    targetId: "product-category-input",
-    title: "Not just a dropdown",
-    body: "Type your own category if it's not in the list: jewelry, pottery, whatever you make. The suggestions are only a starting point.",
-  },
-  {
-    targetId: "nafdac-relevant-toggle",
-    title: "NAFDAC, only if it applies",
-    body: "This defaults from what you told us you make, but you decide per product. Turn it off if this one isn't NAFDAC-regulated.",
-  },
-];
 
 export function ProductDetail() {
   const { id } = useParams();
@@ -47,42 +30,16 @@ export function ProductDetail() {
   const existing = products.find((p) => p.id === id);
   const isNew = !existing;
 
-  // New product: seed category from the business's onboarding "what do you
-  // make?" pick (see lib/presets.ts) rather than a hardcoded "soap" — that
-  // hardcoding was itself the "one vertical becomes the default" problem
-  // this whole effort exists to remove. Empty is a valid starting point;
-  // the field is still required.
   const [name, setName] = useState(existing?.name ?? "");
   const [code, setCode] = useState(existing?.code ?? "");
-  const [category, setCategory] = useState<ProductCategory>(existing?.category ?? business.defaultCategoryPreset ?? "");
+  const [category, setCategory] = useState<ProductCategory>(existing?.category ?? "soap");
   const [standardBatchSize, setStandardBatchSize] = useState<number | "">(existing?.standardBatchSize ?? "");
-  const [standardBatchUnit, setStandardBatchUnit] = useState<MaterialUnit>(
-    existing?.standardBatchUnit ?? findCategoryPreset(business.defaultCategoryPreset)?.defaultUnit ?? "kg",
-  );
-  const [unitTouched, setUnitTouched] = useState(false);
+  const [standardBatchUnit, setStandardBatchUnit] = useState<MaterialUnit>(existing?.standardBatchUnit ?? "kg");
   const [targetYield, setTargetYield] = useState<number | "">(existing?.targetYield ?? "");
-  const [nafdacRelevant, setNafdacRelevant] = useState(
-    existing?.nafdacRelevant ?? findCategoryPreset(business.defaultCategoryPreset)?.nafdacRelevantDefault ?? true,
-  );
-  const [nafdacTouched, setNafdacTouched] = useState(false);
   const [nafdacStatus, setNafdacStatus] = useState<NafdacStatus>(existing?.nafdacStatus ?? "not_registered");
   const [nafdacRegNo, setNafdacRegNo] = useState(existing?.nafdacRegNo ?? "");
   const [recipe, setRecipe] = useState<RecipeItem[]>(existing?.recipe ?? []);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
-
-  // Re-suggest unit / NAFDAC-relevance whenever category changes on a NEW
-  // product — same "only fill if not manually edited" idiom LogABatch.tsx
-  // uses for its cure-ready-date suggestion. Never overwrites a value the
-  // user already touched themselves, and never runs at all once editing an
-  // existing product (its saved values are the source of truth).
-  useEffect(() => {
-    if (!isNew) return;
-    const preset = findCategoryPreset(category);
-    if (!preset) return;
-    if (!unitTouched) setStandardBatchUnit(preset.defaultUnit);
-    if (!nafdacTouched) setNafdacRelevant(preset.nafdacRelevantDefault);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category]);
 
   // Free accounts are limited to 1 product/recipe (see
   // supabase/migrations/0007_split_freemium_caps.sql's enforce_product_cap())
@@ -129,7 +86,6 @@ export function ProductDetail() {
       standardBatchSize: standardBatchSize === "" ? 0 : Number(standardBatchSize),
       standardBatchUnit,
       targetYield: targetYield === "" ? 0 : Number(targetYield),
-      nafdacRelevant,
       nafdacStatus,
       nafdacRegNo: nafdacRegNo || undefined,
       recipe,
@@ -156,7 +112,6 @@ export function ProductDetail() {
 
   return (
     <div className="pb-8">
-      <CoachmarkSequence sequenceId="productDetail.categoryAndNafdac" steps={productDetailCoachSteps} />
       <BackHeader title={isNew ? "Add Product" : name || "Product"} onBack={() => navigate(-1)} />
 
       <form onSubmit={handleSubmit}>
@@ -166,16 +121,12 @@ export function ProductDetail() {
               <BoxedInput label="Name" value={name} onChange={(e) => setName(e.target.value)} required />
               <BoxedInput label="Code" value={code} onChange={(e) => setCode(e.target.value)} maxLength={4} required />
             </div>
-            <ComboInput
-              id="product-category-input"
-              label="Category"
-              options={CATEGORY_PRESETS.map((p) => ({ value: p.value, label: p.label }))}
-              value={category}
-              onChange={(e) => setCategory(e.target.value as ProductCategory)}
-              placeholder="e.g. Soap, Candle, Jewelry..."
-              required
-            />
-            <div className="grid grid-cols-[1fr_90px_1fr] gap-2">
+            <BoxedSelect label="Category" value={category} onChange={(e) => setCategory(e.target.value as ProductCategory)}>
+              <option value="soap">Soap</option>
+              <option value="cosmetic">Cosmetic</option>
+              <option value="cleaning agent">Cleaning agent</option>
+            </BoxedSelect>
+            <div className="grid grid-cols-[1fr_64px_1fr] gap-2">
               <BoxedInput
                 label="Batch Size"
                 type="number"
@@ -186,16 +137,16 @@ export function ProductDetail() {
                 onChange={(e) => setStandardBatchSize(e.target.value === "" ? "" : Number(e.target.value))}
                 required
               />
-              <ComboInput
+              <BoxedSelect
                 label="Unit"
-                options={UNIT_PRESETS}
                 value={standardBatchUnit}
-                onChange={(e) => {
-                  setStandardBatchUnit(e.target.value as MaterialUnit);
-                  setUnitTouched(true);
-                }}
-                required
-              />
+                onChange={(e) => setStandardBatchUnit(e.target.value as MaterialUnit)}
+              >
+                <option value="g">g</option>
+                <option value="kg">kg</option>
+                <option value="ml">ml</option>
+                <option value="l">l</option>
+              </BoxedSelect>
               <BoxedInput
                 label="Target Yield"
                 type="number"
@@ -212,41 +163,22 @@ export function ProductDetail() {
 
         <Section title="NAFDAC">
           <Card className="flex flex-col gap-3">
-            <div id="nafdac-relevant-toggle" className="flex items-center justify-between gap-3">
-              <span className="min-w-0 flex-1">
-                <span className="block text-[14px] font-semibold text-text">NAFDAC-relevant</span>
-                <span className="block text-[12px] text-text-secondary">
-                  Turn off if this product isn't NAFDAC-regulated.
-                </span>
-              </span>
-              <Toggle
-                checked={nafdacRelevant}
-                onChange={(v) => {
-                  setNafdacRelevant(v);
-                  setNafdacTouched(true);
-                }}
-              />
-            </div>
-            {nafdacRelevant && (
-              <>
-                <BoxedSelect label="Status" value={nafdacStatus} onChange={(e) => setNafdacStatus(e.target.value as NafdacStatus)}>
-                  <option value="not_registered">Not registered</option>
-                  <option value="in_process">In process</option>
-                  <option value="registered">Registered</option>
-                </BoxedSelect>
-                <BoxedInput
-                  label="Registration Number (optional)"
-                  value={nafdacRegNo}
-                  onChange={(e) => setNafdacRegNo(e.target.value)}
-                  placeholder="e.g. A7-1234L"
-                />
-              </>
-            )}
+            <BoxedSelect label="Status" value={nafdacStatus} onChange={(e) => setNafdacStatus(e.target.value as NafdacStatus)}>
+              <option value="not_registered">Not registered</option>
+              <option value="in_process">In process</option>
+              <option value="registered">Registered</option>
+            </BoxedSelect>
+            <BoxedInput
+              label="Registration Number (optional)"
+              value={nafdacRegNo}
+              onChange={(e) => setNafdacRegNo(e.target.value)}
+              placeholder="e.g. A7-1234L"
+            />
           </Card>
         </Section>
 
         <Section
-          title={recipeLabelFor(category)}
+          title="Recipe"
           action={
             <button type="button" onClick={addRecipeRow} className="flex items-center gap-1 text-[12px] font-semibold text-teal">
               <Plus size={14} />
