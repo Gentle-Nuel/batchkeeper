@@ -191,7 +191,7 @@ export function ProductDetail() {
             {recipe.map((item, index) => {
               const material = materials.find((m) => m.id === item.materialId);
               return (
-                <div key={index} className="grid grid-cols-[1fr_90px_20px] items-end gap-2">
+                <div key={index} className="grid grid-cols-[1fr_104px_20px] items-end gap-2">
                   <BoxedSelect
                     value={item.materialId}
                     onChange={(e) => updateRecipeRow(index, { materialId: e.target.value })}
@@ -211,10 +211,10 @@ export function ProductDetail() {
                       inputMode="decimal"
                       value={item.quantity}
                       onChange={(e) => updateRecipeRow(index, { quantity: Number(e.target.value) })}
-                      className="w-full rounded-input border border-border bg-input-fill px-2 py-2.5 text-[13px] text-text outline-none focus:border-teal"
+                      className="w-full rounded-input border border-border bg-input-fill px-2 py-2.5 text-[16px] text-text outline-none focus:border-teal"
                     />
                   </div>
-                  <button type="button" onClick={() => removeRecipeRow(index)} className="mb-2.5 text-text-secondary">
+                  <button type="button" onClick={() => removeRecipeRow(index)} className="relative mb-2.5 text-text-secondary after:absolute after:-inset-[14px]">
                     <X size={16} />
                   </button>
                 </div>

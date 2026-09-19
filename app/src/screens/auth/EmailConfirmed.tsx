@@ -30,7 +30,7 @@ export function EmailConfirmed() {
   const waiting = !authChecked;
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-md flex-col items-center justify-center px-6 py-10 text-center">
+    <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col items-center justify-center px-6 py-10 text-center">
       <span className="mb-3 flex h-14 w-14 items-center justify-center rounded-card bg-teal/10 text-teal">
         {waiting ? <Mail size={26} /> : <CheckCircle2 size={26} />}
       </span>

@@ -8,7 +8,7 @@ import { useCoachmarkStore } from "../store/useCoachmarkStore";
  * sign-in screen, or of stale/empty content before redirecting to business
  * setup, for an already-logged-in user. */
 function AuthChecking() {
-  return <div className="min-h-screen bg-bg" />;
+  return <div className="min-h-dvh bg-bg" />;
 }
 
 function useGate() {
@@ -37,7 +37,7 @@ export function TabLayout() {
   if (gate === "setup-business") return <Navigate to="/setup-business" replace />;
 
   return (
-    <div className="mx-auto min-h-screen w-full max-w-md bg-bg">
+    <div className="mx-auto min-h-dvh w-full max-w-md bg-bg">
       <Outlet />
       <BottomNav />
     </div>
@@ -63,7 +63,7 @@ export function DrillLayout() {
   if (gate === "setup-business") return <Navigate to="/setup-business" replace />;
 
   return (
-    <div className="mx-auto min-h-screen w-full max-w-md bg-bg">
+    <div className="mx-auto min-h-dvh w-full max-w-md bg-bg">
       <Outlet />
     </div>
   );

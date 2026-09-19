@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import type { Location } from "react-router-dom";
 import { TabLayout, DrillLayout } from "./components/TabLayout";
@@ -52,7 +52,7 @@ const TermsOfService = lazy(() => import("./screens/more/TermsOfService").then((
 /** Blank shell while a lazy screen chunk loads — matches TabLayout's own
  * AuthChecking placeholder so there's no visual flash between the two. */
 function ScreenLoading() {
-  return <div className="min-h-screen bg-bg" />;
+  return <div className="min-h-dvh bg-bg" />;
 }
 
 function App() {
@@ -60,6 +60,24 @@ function App() {
   const state = location.state as { backgroundLocation?: Location } | null;
   const backgroundLocation = state?.backgroundLocation;
   const initAuth = useAppStore((s) => s.initAuth);
+
+  // The Log a Sale sheet is a route overlay, so a back press pops the route and
+  // would unmount it on the spot. Remember where it was opened (adjusting state
+  // during render, so there is no flash of an unmounted frame) and keep it
+  // mounted after the pop; `closing` tells it to slide out, and it calls
+  // `onGone` once it has. `goneKey` records a location whose sheet has already
+  // left, because the router applies navigation as a deferred transition: for a
+  // moment after `onGone`, `backgroundLocation` is still set and without this
+  // the sheet would be re-adopted and flash back in.
+  const [sheet, setSheet] = useState<{ location: Location | null; goneKey: string | null }>({
+    location: null,
+    goneKey: null,
+  });
+  if (backgroundLocation && sheet.location?.key !== location.key && sheet.goneKey !== location.key) {
+    setSheet({ location, goneKey: null });
+  }
+  const sheetLocation = sheet.location;
+  const sheetClosing = !backgroundLocation && sheetLocation !== null;
 
   useEffect(() => {
     initAuth();
@@ -124,10 +142,18 @@ function App() {
       </Suspense>
 
       {/* Log a Sale renders as a sheet over whatever was underneath (Batch Detail) */}
-      {backgroundLocation && (
+      {sheetLocation && (
         <Suspense fallback={null}>
-          <Routes>
-            <Route path="/batches/:id/log-a-sale" element={<LogASale />} />
+          <Routes location={sheetLocation}>
+            <Route
+              path="/batches/:id/log-a-sale"
+              element={
+                <LogASale
+                  closing={sheetClosing}
+                  onGone={() => setSheet((s) => ({ location: null, goneKey: s.location?.key ?? s.goneKey }))}
+                />
+              }
+            />
           </Routes>
         </Suspense>
       )}
