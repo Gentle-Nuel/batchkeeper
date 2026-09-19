@@ -87,7 +87,6 @@ export const seedProducts: Product[] = withBusiness<Omit<Product, "businessId">>
     standardBatchSize: 2.4,
     standardBatchUnit: "kg",
     targetYield: 50,
-    nafdacRelevant: true,
     nafdacStatus: "in_process",
     recipe: [
       { materialId: "mat-shea", quantity: 1.2 },
@@ -103,7 +102,6 @@ export const seedProducts: Product[] = withBusiness<Omit<Product, "businessId">>
     standardBatchSize: 5,
     standardBatchUnit: "kg",
     targetYield: 40,
-    nafdacRelevant: true,
     nafdacStatus: "registered",
     nafdacRegNo: "A7-1234L",
     recipe: [
@@ -121,7 +119,6 @@ export const seedProducts: Product[] = withBusiness<Omit<Product, "businessId">>
     standardBatchSize: 10,
     standardBatchUnit: "l",
     targetYield: 60,
-    nafdacRelevant: true,
     nafdacStatus: "not_registered",
     recipe: [
       { materialId: "mat-coconut", quantity: 0.4 },

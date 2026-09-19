@@ -43,34 +43,12 @@ export function pluralize(count: number, singular: string, plural = `${singular}
   return `${count} ${count === 1 ? singular : plural}`;
 }
 
-/** Units that never take a plural "-s" here: SI/metric abbreviations
- * (g, kg, ml, l, m -- "2 kgs"/"2 ms" is wrong, and "ms" doubly so since it
- * reads as milliseconds) and "dozen" (English convention is "2 dozen
- * eggs", not "2 dozens"). "m" wasn't in the original list -- it's not in
- * UNIT_PRESETS -- but it's a very natural free-typed unit for the
- * vertical-expansion work (fabric/wire/ribbon length for textile/jewelry
- * makers), found live via the jewelry walkthrough. Everything else -- a
- * UNIT_PRESETS word like "piece", or any free-typed custom unit (e.g.
- * "cup") -- pluralizes with a regular "+s" via the pluralize() helper
- * below. Known limitation: only handles regular pluralization -- an
- * irregular plural a user might type (e.g. "loaf" -> "loaves") won't come
- * out right. Not worth a full irregular-plural dictionary for a display
- * nicety. */
-const NON_PLURALIZING_UNITS = new Set(["g", "kg", "ml", "l", "m", "dozen"]);
-
+/** Quantity with its unit, e.g. "2.5 kg". Units are the fixed metric set
+ * (g, kg, ml, l), all abbreviations that never take a plural "s", so no
+ * pluralization logic is needed. */
 export function formatQty(qty: number, unit: string): string {
   const trimmed = Number.isInteger(qty) ? qty : Math.round(qty * 100) / 100;
-  const lower = unit.toLowerCase();
-  // A unit already ending in "s" (typed that way by the producer, e.g.
-  // "packs") must not get a second one stacked on -- pluralize() would
-  // otherwise turn "packs" into "packss". Treating an already-"s"-ending
-  // unit as effectively already-plural and leaving it untouched is a
-  // deliberately simple guard, not a real singular/plural detector -- it
-  // doesn't (and can't, without a dictionary) turn a genuinely singular
-  // word ending in "s" like "glass" into "glasses" either. Found live: a
-  // real "packs" unit surfaced this the moment it existed.
-  if (NON_PLURALIZING_UNITS.has(lower) || lower.endsWith("s")) return `${trimmed} ${unit}`;
-  return pluralize(trimmed, unit);
+  return `${trimmed} ${unit}`;
 }
 
 export function formatDate(iso: string): string {

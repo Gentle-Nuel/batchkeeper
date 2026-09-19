@@ -1,19 +1,9 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAppStore } from "../../store/useAppStore";
-import { BackHeader, Card, Section, BoxedInput, ComboInput, PrimaryButton, DeleteLink, ConfirmDialog } from "../../components/ui";
+import { BackHeader, Card, Section, BoxedInput, BoxedSelect, PrimaryButton, DeleteLink, ConfirmDialog } from "../../components/ui";
 import { productsUsingMaterial } from "../../lib/selectors";
-import { UNIT_PRESETS } from "../../lib/presets";
 import type { MaterialUnit } from "../../types/models";
-import { CoachmarkSequence } from "../../components/Coachmark";
-
-const editMaterialCoachSteps = [
-  {
-    targetId: "material-unit-input",
-    title: "Not just a dropdown",
-    body: "Type your own unit if it's not in the list: cup, tray, anything you measure by. The suggestions are only a starting point.",
-  },
-];
 
 export function EditMaterial() {
   const { id } = useParams();
@@ -70,7 +60,6 @@ export function EditMaterial() {
 
   return (
     <div className="pb-8">
-      <CoachmarkSequence sequenceId="editMaterial.unit" steps={editMaterialCoachSteps} />
       <BackHeader title={isNew ? "Add Material" : "Edit Material"} onBack={() => navigate(-1)} />
 
       <form onSubmit={handleSubmit}>
@@ -80,14 +69,12 @@ export function EditMaterial() {
 
         <Section>
           <Card className="grid grid-cols-2 gap-3">
-            <ComboInput
-              id="material-unit-input"
-              label="Unit"
-              options={UNIT_PRESETS}
-              value={unit}
-              onChange={(e) => setUnit(e.target.value as MaterialUnit)}
-              required
-            />
+            <BoxedSelect label="Unit" value={unit} onChange={(e) => setUnit(e.target.value as MaterialUnit)}>
+              <option value="g">g</option>
+              <option value="kg">kg</option>
+              <option value="ml">ml</option>
+              <option value="l">l</option>
+            </BoxedSelect>
             <BoxedInput
               label="Cost / Unit"
               type="number"
