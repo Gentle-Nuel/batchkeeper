@@ -460,6 +460,18 @@ export const useAppStore = create<AppState>()(
 
         supabase.auth.onAuthStateChange((event, session) => {
           const user = session?.user ?? null;
+          // supabase-js fires SIGNED_IN again (and periodically fires
+          // TOKEN_REFRESHED) whenever the tab/PWA regains focus — not just on
+          // a real sign-in. Only treat it as an identity change (reset the
+          // gate to "loading" and refetch) when the signed-in user actually
+          // differs from before, on sign-out, or on the very first session
+          // check. Otherwise every refocus would force dataLoaded back to
+          // false, which makes TabLayout's useGate() render <AuthChecking />
+          // and unmount the whole screen (destroying any in-progress form
+          // state) just to reload data that hasn't gone stale.
+          const identityChanged =
+            event === "SIGNED_OUT" || event === "INITIAL_SESSION" || (user?.id ?? null) !== get().authUserId;
+
           set({
             isAuthenticated: !!user,
             // Only a real "PASSWORD_RECOVERY" event (fired when the emailed
@@ -475,22 +487,27 @@ export const useAppStore = create<AppState>()(
             userEmail: user?.email ?? null,
             authUserId: user?.id ?? null,
             authChecked: true,
-            // Force the gate back to "loading" on every auth transition —
-            // closes a real race where dataLoaded/needsBusinessSetup left
-            // over from a PREVIOUS session (e.g. signing into a different
-            // account without an intervening sign-out) could otherwise
-            // still read true/true here and briefly redirect to
+            // Force the gate back to "loading" only on an actual identity
+            // change — closes a real race where dataLoaded/needsBusinessSetup
+            // left over from a PREVIOUS session (e.g. signing into a
+            // different account without an intervening sign-out) could
+            // otherwise still read true/true here and briefly redirect to
             // /setup-business before this user's own loadBusinesses() call
             // below has a chance to set the real values.
-            dataLoaded: false,
+            ...(identityChanged ? { dataLoaded: false } : {}),
           });
           if (user) {
-            if (!businessLoadInFlight) {
-              businessLoadInFlight = loadBusinesses(user.id).finally(() => {
-                businessLoadInFlight = null;
-              });
+            // Same-user SIGNED_IN/TOKEN_REFRESHED (refocus, silent token
+            // renewal): session fields above are already current, and the
+            // already-loaded business data isn't stale, so skip the refetch.
+            if (identityChanged) {
+              if (!businessLoadInFlight) {
+                businessLoadInFlight = loadBusinesses(user.id).finally(() => {
+                  businessLoadInFlight = null;
+                });
+              }
+              void loadPlanLimits();
             }
-            void loadPlanLimits();
           } else {
             set({
               businesses: [],
