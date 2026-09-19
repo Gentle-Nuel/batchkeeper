@@ -189,7 +189,7 @@ export function LogABatch() {
             <Card className="flex flex-col gap-3">
               <div
                 id="planned-actual-header"
-                className="grid grid-cols-[1fr_72px_80px] gap-2 text-[10px] font-semibold uppercase text-text-secondary"
+                className="grid grid-cols-[1fr_72px_96px] gap-2 text-[10px] font-semibold uppercase text-text-secondary"
               >
                 <span>Material</span>
                 <span>Planned</span>
@@ -199,7 +199,7 @@ export function LogABatch() {
                 const material = materials.find((m) => m.id === item.materialId);
                 if (!material) return null;
                 return (
-                  <div key={item.materialId} className="grid grid-cols-[1fr_72px_80px] items-center gap-2">
+                  <div key={item.materialId} className="grid grid-cols-[1fr_72px_96px] items-center gap-2">
                     <span className="truncate text-[14px] text-text">{material.name}</span>
                     <span className="text-[12px] text-text-secondary">{formatQty(item.quantity, material.unit)}</span>
                     <input
@@ -211,7 +211,7 @@ export function LogABatch() {
                       onChange={(e) =>
                         setActualQuantities((prev) => ({ ...prev, [item.materialId]: Number(e.target.value) }))
                       }
-                      className="w-full rounded-input border border-border bg-input-fill px-2 py-1.5 text-[13px] text-text outline-none focus:border-teal"
+                      className="w-full rounded-input border border-border bg-input-fill px-2 py-1.5 text-[16px] text-text outline-none focus:border-teal"
                     />
                   </div>
                 );

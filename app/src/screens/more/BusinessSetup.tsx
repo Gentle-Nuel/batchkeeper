@@ -27,7 +27,7 @@ export function BusinessSetup() {
   // Deliberately NOT using the shared RequireAuth/TabLayout gate here — that
   // gate redirects TO this route when a business is needed, so reusing it
   // here would loop. Just needs a signed-in user, business count aside.
-  if (!authChecked) return <div className="min-h-screen bg-bg" />;
+  if (!authChecked) return <div className="min-h-dvh bg-bg" />;
   if (!isAuthenticated) return <Navigate to="/sign-in" replace />;
 
   // Free accounts are limited to 1 business (see
@@ -37,7 +37,7 @@ export function BusinessSetup() {
   // then have the write silently purged after the fact.
   if (!isFirstBusiness && !canAddBusiness(businesses)) {
     return (
-      <div className="mx-auto min-h-screen w-full max-w-md bg-bg pb-8">
+      <div className="mx-auto min-h-dvh w-full max-w-md bg-bg pb-8">
         <BackHeader title="Add Business" onBack={() => navigate(-1)} />
         <div className="flex flex-col items-center px-6 py-10 text-center">
           <span className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-card bg-teal/10 text-teal">
@@ -64,7 +64,7 @@ export function BusinessSetup() {
   }
 
   return (
-    <div className="mx-auto min-h-screen w-full max-w-md bg-bg pb-8">
+    <div className="mx-auto min-h-dvh w-full max-w-md bg-bg pb-8">
       {isFirstBusiness ? (
         <div className="px-5 pt-10 pb-2 text-center">
           <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-card bg-teal/10 text-teal">

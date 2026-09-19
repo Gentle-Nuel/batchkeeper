@@ -1,8 +1,9 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ChevronRight, RefreshCw, Check, CloudOff, Eye, EyeOff, Circle } from "lucide-react";
 import { useAppStore } from "../store/useAppStore";
 import type { BatchStatus, NafdacStatus } from "../types/models";
 import { PASSWORD_RULES } from "../lib/passwordRules";
+import { Sheet, type SheetHandle } from "./Sheet";
 
 // ---- Sync status badge ---------------------------------------------------
 
@@ -64,7 +65,7 @@ export function BackHeader({ title, onBack, right }: { title: string; onBack: ()
       <button
         onClick={onBack}
         aria-label="Back"
-        className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-surface text-text"
+        className="relative flex h-8 w-8 items-center justify-center rounded-full border border-border bg-surface text-text after:absolute after:-inset-[6px]"
       >
         <ChevronRightIcon flip />
       </button>
@@ -124,7 +125,7 @@ export function Card({ children, className = "" }: { children: ReactNode; classN
 }
 
 export function Screen({ children }: { children: ReactNode }) {
-  return <div className="mx-auto min-h-screen w-full max-w-md bg-bg pb-24">{children}</div>;
+  return <div className="mx-auto min-h-dvh w-full max-w-md bg-bg pb-24">{children}</div>;
 }
 
 export function Section({ title, children, action }: { title?: string; children: ReactNode; action?: ReactNode }) {
@@ -160,7 +161,7 @@ export function BoxedInput({
         <input
           {...props}
           type={isPassword ? (visible ? "text" : "password") : props.type}
-          className={`w-full rounded-input border border-border bg-input-fill px-3 py-2.5 text-[14px] text-text outline-none focus:border-teal ${
+          className={`w-full rounded-input border border-border bg-input-fill px-3 py-2.5 text-[16px] text-text outline-none focus:border-teal ${
             isPassword ? "pr-10" : ""
           } ${props.className ?? ""}`}
         />
@@ -170,7 +171,7 @@ export function BoxedInput({
             tabIndex={-1}
             onClick={() => setVisible((v) => !v)}
             aria-label={visible ? "Hide password" : "Show password"}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary after:absolute after:-inset-[14px]"
           >
             {visible ? <EyeOff size={16} /> : <Eye size={16} />}
           </button>
@@ -212,7 +213,7 @@ export function BoxedTextarea({
       {label && <FieldLabel>{label}</FieldLabel>}
       <textarea
         {...props}
-        className={`w-full rounded-input border border-border bg-input-fill px-3 py-2.5 text-[14px] text-text outline-none focus:border-teal ${props.className ?? ""}`}
+        className={`w-full rounded-input border border-border bg-input-fill px-3 py-2.5 text-[16px] text-text outline-none focus:border-teal ${props.className ?? ""}`}
       />
     </label>
   );
@@ -228,7 +229,7 @@ export function BoxedSelect({
       {label && <FieldLabel>{label}</FieldLabel>}
       <select
         {...props}
-        className={`w-full rounded-input border border-border bg-input-fill px-3 py-2.5 text-[14px] text-text outline-none focus:border-teal ${props.className ?? ""}`}
+        className={`w-full rounded-input border border-border bg-input-fill px-3 py-2.5 text-[16px] text-text outline-none focus:border-teal ${props.className ?? ""}`}
       >
         {children}
       </select>
@@ -256,7 +257,7 @@ export function PrimaryButton({
   return (
     <button
       {...props}
-      className={`flex w-full items-center justify-center gap-2 rounded-card bg-teal px-4 py-3.5 text-[14px] font-semibold text-white transition active:bg-teal-dark disabled:opacity-50 ${className}`}
+      className={`flex w-full items-center justify-center gap-2 rounded-card bg-teal px-4 py-3.5 text-[14px] font-semibold text-white active:bg-teal-dark disabled:opacity-50 ${className}`}
     >
       {children}
       {arrow && <ChevronRight size={16} />}
@@ -272,7 +273,7 @@ export function SecondaryButton({
   return (
     <button
       {...props}
-      className={`flex w-full items-center justify-center gap-2 rounded-card border border-border bg-surface px-4 py-3.5 text-[14px] font-semibold text-text transition active:bg-input-fill ${className}`}
+      className={`flex w-full items-center justify-center gap-2 rounded-card border border-border bg-surface px-4 py-3.5 text-[14px] font-semibold text-text active:bg-input-fill ${className}`}
     >
       {children}
     </button>
@@ -310,33 +311,47 @@ export function ConfirmDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
-  if (!open) return null;
+  // Kept mounted after `open` goes false so the sheet can slide out instead of
+  // vanishing. Opening mounts it at once; closing (Confirm, or the parent
+  // flipping `open`) dismisses it and only then unmounts.
+  const [mounted, setMounted] = useState(open);
+  const sheetRef = useRef<SheetHandle>(null);
+  useEffect(() => {
+    if (open) setMounted(true);
+    else sheetRef.current?.dismiss(() => setMounted(false));
+  }, [open]);
+
+  if (!mounted) return null;
   return (
-    <>
-      <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 sm:items-center" onClick={onCancel}>
-        <div
-          onClick={(e) => e.stopPropagation()}
-          className="w-full max-w-md rounded-t-frame border border-border bg-surface p-5 pb-8 sm:rounded-card sm:pb-5"
-        >
-          <h3 className="text-[16px] font-semibold text-text">{title}</h3>
-          <p className="mt-1.5 text-[12px] leading-relaxed text-text-secondary">{message}</p>
-          <div className="mt-4 flex flex-col gap-2.5">
-            <button
-              type="button"
-              onClick={onConfirm}
-              className={`w-full rounded-card px-4 py-3.5 text-[14px] font-semibold text-white ${
-                tone === "danger" ? "bg-danger" : "bg-teal active:bg-teal-dark"
-              }`}
-            >
-              {confirmLabel}
-            </button>
-            <SecondaryButton type="button" onClick={onCancel}>
-              Cancel
-            </SecondaryButton>
-          </div>
+    <Sheet
+      ref={sheetRef}
+      label={title}
+      dragAnywhere
+      // Reached when the user dismisses it (Cancel, scrim tap, Esc, drag down).
+      onClose={() => {
+        setMounted(false);
+        onCancel();
+      }}
+    >
+      <div className="rounded-t-frame border border-border bg-surface p-5 pb-8">
+        <h3 className="text-[16px] font-semibold text-text">{title}</h3>
+        <p className="mt-1.5 text-[12px] leading-relaxed text-text-secondary">{message}</p>
+        <div className="mt-4 flex flex-col gap-2.5">
+          <button
+            type="button"
+            onClick={onConfirm}
+            className={`w-full rounded-card px-4 py-3.5 text-[14px] font-semibold text-white ${
+              tone === "danger" ? "bg-danger" : "bg-teal active:bg-teal-dark"
+            }`}
+          >
+            {confirmLabel}
+          </button>
+          <SecondaryButton type="button" onClick={() => sheetRef.current?.dismiss()}>
+            Cancel
+          </SecondaryButton>
         </div>
       </div>
-    </>
+    </Sheet>
   );
 }
 

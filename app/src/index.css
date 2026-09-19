@@ -41,11 +41,94 @@ body {
   color: var(--color-text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  /* Stops Android Chrome's pull-to-refresh from reloading the app (and
+     wiping a half-filled Log a Batch form) when someone scrolls up past the
+     top. Normal scrolling is unaffected. */
+  overscroll-behavior-y: contain;
 }
 
 * {
   box-sizing: border-box;
 }
+
+/* In the base layer so Tailwind's touch-* utilities can still override it on
+   gesture surfaces. "manipulation" drops the ~300ms double-tap-to-zoom wait on
+   every tap but keeps pinch-zoom available. */
+@layer base {
+  * {
+    touch-action: manipulation;
+  }
+
+  /* Press feedback for every button and link, in one place so they all behave
+     the same. It starts on pointer-down (80ms) rather than waiting for release,
+     and springs back slower (220ms) than it went in. Lives in the base layer so
+     a Tailwind transition utility on a specific element still wins. Switches
+     are excluded (their knob animates itself) and so are disabled buttons. */
+  button:not(:disabled):not([role="switch"]),
+  a[href],
+  [role="button"] {
+    transition:
+      transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+      background-color 150ms,
+      color 150ms,
+      border-color 150ms,
+      opacity 150ms;
+  }
+  button:not(:disabled):not([role="switch"]):active,
+  a[href]:active,
+  [role="button"]:active {
+    transform: scale(0.97);
+    transition-duration: 80ms, 150ms, 150ms, 150ms, 150ms;
+  }
+
+  /* Reduced motion keeps a response but drops the movement: a brief dim
+     instead of a scale. */
+  @media (prefers-reduced-motion: reduce) {
+    button:not(:disabled):not([role="switch"]):active,
+    a[href]:active,
+    [role="button"]:active {
+      transform: none;
+      opacity: 0.7;
+    }
+  }
+}
+
+/* Coachmark popover arrival: grows out of the edge facing the element it is
+   explaining (transform-origin and --coach-shift are set inline per placement).
+   Reduced motion swaps the movement for a plain fade. */
+@keyframes coach-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--coach-shift, 6px)) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes coach-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.coach-pop {
+  animation: coach-pop-in 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .coach-pop {
+    animation: coach-fade-in 150ms ease-out both;
+  }
+}
+
+/* Form fields must stay at 16px or larger: iOS zooms the whole page in
+   whenever a field with smaller text gets focus, and often leaves it zoomed
+   until the user pinches back out. The size is set where the fields are
+   defined (BoxedInput / BoxedSelect / BoxedTextarea in components/ui.tsx, plus
+   the two number cells in LogABatch and ProductDetail). Keep any new field
+   at text-[16px] or up. */
 
 /* Hide scrollbars on the mobile-frame scroll containers without disabling scroll. */
 .no-scrollbar::-webkit-scrollbar {

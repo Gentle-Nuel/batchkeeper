@@ -46,13 +46,13 @@ export function Onboarding() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-md flex-col bg-bg">
+    <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col bg-bg">
       <div className="flex h-11 items-center justify-end px-5 pt-5">
         {!isLast && (
           <button
             type="button"
             onClick={() => finish("/sign-in")}
-            className="text-[13px] font-semibold text-text-secondary"
+            className="relative text-[13px] font-semibold text-text-secondary after:absolute after:-inset-x-3 after:-inset-y-3"
           >
             Skip
           </button>
@@ -77,7 +77,9 @@ export function Onboarding() {
               type="button"
               aria-label={`Go to slide ${i + 1}`}
               onClick={() => setIndex(i)}
-              className={`h-1.5 rounded-full transition-all ${i === index ? "w-5 bg-teal" : "w-1.5 bg-border"}`}
+              className={`relative h-1.5 rounded-full transition-all after:absolute after:-inset-x-[3px] after:-inset-y-[19px] ${
+                i === index ? "w-5 bg-teal" : "w-1.5 bg-border"
+              }`}
             />
           ))}
         </div>
@@ -90,7 +92,7 @@ export function Onboarding() {
             <button
               type="button"
               onClick={() => finish("/sign-in")}
-              className="text-[13px] font-semibold text-text-secondary"
+              className="relative text-[13px] font-semibold text-text-secondary after:absolute after:-inset-x-3 after:-inset-y-3"
             >
               Already have an account? <span className="text-teal">Sign In</span>
             </button>
