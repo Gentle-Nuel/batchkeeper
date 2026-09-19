@@ -8,7 +8,7 @@ import type { BatchStatus } from "../../types/models";
 
 const filters: { label: string; value: BatchStatus | "all" }[] = [
   { label: "All", value: "all" },
-  { label: "Curing", value: "curing" },
+  { label: "Processing", value: "curing" },
   { label: "Ready", value: "ready" },
   { label: "Sold Out", value: "sold_out" },
 ];

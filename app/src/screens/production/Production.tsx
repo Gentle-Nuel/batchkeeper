@@ -57,7 +57,7 @@ export function Production() {
           <div className="flex divide-x divide-border">
             <div className="flex-1 pr-3 text-center">
               <p className="text-[24px] font-semibold text-text">{curingCount}</p>
-              <p className="text-[12px] text-text-secondary">Curing</p>
+              <p className="text-[12px] text-text-secondary">Processing</p>
             </div>
             <div className="flex-1 pl-3 text-center">
               <p className="text-[24px] font-semibold text-text">{readyCount}</p>
