@@ -48,7 +48,15 @@ export interface PeriodSummary {
   byProduct: ProductSplit[];
 }
 
-/** Real P&L for a month, computed entirely from actual batches/sales. */
+/**
+ * Real P&L for a month, computed entirely from actual batches/sales.
+ *
+ * Costs land in the month a batch was made and revenue in the month a sale
+ * happened, so a batch that's made in July and sold in August shows its cost
+ * in July and its revenue in August. Revenue must not be tied to the batch's
+ * own month: soap cures for weeks, so most batches are sold in a later month
+ * than they were made.
+ */
 export function computeRealPeriod(
   year: number,
   month: number,
@@ -59,13 +67,16 @@ export function computeRealPeriod(
 ): PeriodSummary {
   const monthBatches = batches.filter((b) => inMonth(b.dateMade, year, month));
   const monthSales = sales.filter((s) => inMonth(s.date, year, month));
+  // Look products up across ALL batches, not just this month's: a sale's batch
+  // is usually from an earlier month.
+  const productIdByBatchId = new Map(batches.map((b) => [b.id, b.productId]));
 
   const byProduct: ProductSplit[] = products.map((p) => {
-    const productBatches = monthBatches.filter((b) => b.productId === p.id);
-    const productBatchIds = new Set(productBatches.map((b) => b.id));
-    const costs = productBatches.reduce((sum, b) => sum + batchTotalCost(b, materials), 0);
+    const costs = monthBatches
+      .filter((b) => b.productId === p.id)
+      .reduce((sum, b) => sum + batchTotalCost(b, materials), 0);
     const revenue = monthSales
-      .filter((s) => productBatchIds.has(s.batchId))
+      .filter((s) => productIdByBatchId.get(s.batchId) === p.id)
       .reduce((sum, s) => sum + s.quantitySold * s.unitPrice, 0);
     return { productId: p.id, revenue, costs, profit: revenue - costs };
   });
